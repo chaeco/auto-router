@@ -1,8 +1,8 @@
 node_modules/
-dist/
-*.js
-*.d.ts
-*.map
+src/**/*.js
+src/**/*.d.ts
+src/**/*.map
+example/dist/
 .DS_Store
 .env
 .env.local

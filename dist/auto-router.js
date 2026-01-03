@@ -352,6 +352,22 @@ async function loadRoutes(app, options = { dir: './controllers', prefix: '/api',
     // Wait for all imports to complete
     // 等待所有导入完成
     await Promise.all(importPromises);
+    // Output summary after all routes are loaded
+    // 所有路由加载完成后输出总结
+    console.log(`📋 Registered routes:`);
+    // 注册的路由:
+    if (app.$routes?.all.length === 0) {
+        console.warn(`⚠️  No routes registered!`);
+        // 没有注册任何路由!
+    }
+    else {
+        console.log(`   Total: ${app.$routes?.all.length || 0}`);
+        // 总计: ${app.$routes?.all.length || 0}
+        console.log(`   Public: ${app.$routes?.publicRoutes.length || 0}`);
+        // 公开: ${app.$routes?.publicRoutes.length || 0}
+        console.log(`   Protected: ${app.$routes?.protectedRoutes.length || 0}`);
+        // 受保护: ${app.$routes?.protectedRoutes.length || 0}
+    }
 }
 /**
  * Auto router plugin - factory function

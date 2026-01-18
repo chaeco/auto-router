@@ -130,23 +130,29 @@ app.extend(
 ## 特性演示
 
 ### 1. 基本路由
+
 - 文件名以 HTTP 方法开头：`get-users.ts` → `GET /api/users`
 - 仅方法名：`get.ts` → `GET /api` (新增特性)
 
 ### 2. 动态参数
+
 - `get-[id].ts` → `GET /api/:id`
 - `get-[userId]-[postId].ts` → `GET /api/:userId/:postId`
+- `get-[id]-resources.ts` → `GET /api/:id/resources`
 
 ### 3. 权限控制
+
 - 全局默认权限配置
 - 单个路由权限覆盖
 - 与 `@chaeco/hoa-jwt-permission` 集成
 
 ### 4. 多层级配置
+
 - 合并式配置（推荐）：一个 `autoRouter` 配置多个目录
 - 分离式配置：多个 `autoRouter` 实例
 
 ### 5. 日志管理
+
 - 控制是否输出日志
 - 自定义日志回调，集成到自己的日志系统
 - 默认显示路由信息、权限标记等

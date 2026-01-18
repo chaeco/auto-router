@@ -1,6 +1,6 @@
 {
   "name": "@chaeco/hoa-auto-router",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "File-based automatic router plugin for Hoa.js framework",
   "type": "module",
   "main": "dist/index.js",

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Suffix support for dynamic parameters**: Files like `get-[id]-resources.ts` are now correctly parsed as `GET /api/:id/resources`
 - **HTTP method-only file names**: Files can now be named with just the HTTP method (e.g., `get.ts`, `post.ts`), and the route will be the directory path
 - **Prefix array support**: `prefix` parameter now accepts string arrays for registering routes with multiple prefixes
 - **Merged configuration support**: `autoRouter` now accepts an array of configurations for cleaner, more concise setup

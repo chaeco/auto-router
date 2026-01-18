@@ -82,6 +82,7 @@ app.listen(3000)
 
 - `get-[userId]-[postId].ts` → `GET /api/:userId/:postId`
 - `put-[userId]-profile.ts` → `PUT /api/:userId/profile`
+- `get-[id]-resources.ts` → `GET /api/:id/resources`
 
 ### 嵌套目录示例
 

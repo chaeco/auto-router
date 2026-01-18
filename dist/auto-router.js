@@ -215,8 +215,10 @@ async function loadRoutes(app, options = {
                 routeName = routeName
                     .replace(/\[(\w+)\]/g, ':$1') // [param] -> :param
                     // [param] -> :param
-                    .replace(/-:/g, '/:'); // -: -> /: (handle parameter connectors)
+                    .replace(/-:/g, '/:') // -: -> /: (handle parameter connectors)
+                    .replace(/:(\w+)-/g, ':$1/'); // :- -> :/ (handle parameter suffixes)
                 // -: -> /:（处理参数之间的连接符）
+                // :- -> :/（处理参数后的连接符）
                 // Build full route path
                 // 构建完整路由路径
                 let fullPath;

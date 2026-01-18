@@ -85,12 +85,12 @@ async function loadRoutes(
     logging: boolean
     onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
   } = {
-    dir: './controllers',
-    prefix: '/api',
-    defaultRequiresAuth: false,
-    strict: true,
-    logging: true,
-  }
+      dir: './controllers',
+      prefix: '/api',
+      defaultRequiresAuth: false,
+      strict: true,
+      logging: true,
+    }
 ) {
   const { dir, prefix, defaultRequiresAuth, strict, logging, onLog } = options
   const methods = ['get', 'post', 'put', 'delete', 'patch', 'head', 'options']
@@ -227,7 +227,7 @@ async function loadRoutes(
 
         const method = validation.method!
         const nameWithoutExt = file.replace(/\.(ts|js)$/, '')
-        
+
         // If file name is exactly the HTTP method, routeName is empty
         // 如果文件名恰好是 HTTP 方法，routeName 为空
         let routeName = ''
@@ -248,7 +248,9 @@ async function loadRoutes(
           .replace(/\[(\w+)\]/g, ':$1') // [param] -> :param
           // [param] -> :param
           .replace(/-:/g, '/:') // -: -> /: (handle parameter connectors)
+          .replace(/:(\w+)-/g, ':$1/') // :- -> :/ (handle parameter suffixes)
         // -: -> /:（处理参数之间的连接符）
+        // :- -> :/（处理参数后的连接符）
 
         // Build full route path
         // 构建完整路由路径
@@ -554,21 +556,21 @@ async function loadRoutes(
 export function autoRouter(
   options:
     | {
-        dir?: string
-        prefix?: string | string[]
-        defaultRequiresAuth?: boolean
-        strict?: boolean
-        logging?: boolean
-        onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
-      }
+      dir?: string
+      prefix?: string | string[]
+      defaultRequiresAuth?: boolean
+      strict?: boolean
+      logging?: boolean
+      onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
+    }
     | Array<{
-        dir?: string
-        prefix?: string | string[]
-        defaultRequiresAuth?: boolean
-        strict?: boolean
-        logging?: boolean
-        onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
-      }> = {}
+      dir?: string
+      prefix?: string | string[]
+      defaultRequiresAuth?: boolean
+      strict?: boolean
+      logging?: boolean
+      onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
+    }> = {}
 ): (app: any) => Promise<void> {
   // Convert to array for unified processing
   // 转换为数组以统一处理
@@ -589,7 +591,7 @@ export function autoRouter(
     const prefixes = Array.isArray(opt.prefix)
       ? opt.prefix
       : [opt.prefix || '/api']
-    
+
     for (const prefix of prefixes) {
       expandedOptionsArray.push({
         dir: opt.dir || './controllers',

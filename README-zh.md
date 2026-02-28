@@ -19,9 +19,9 @@ Node.js 框架的文件式自动路由插件（支持 Hoa、Koa、Fastify、Expr
 ## 安装
 
 ```bash
-npm install @chaeco/auto-router
+npm install github:chaeco/auto-router
 # 或
-yarn add @chaeco/auto-router
+yarn add github:chaeco/auto-router
 ```
 
 ## 快速开始

@@ -24,9 +24,9 @@ File-based automatic router plugin for Node.js frameworks (Hoa, Koa, Fastify, Ex
 ## Installation
 
 ```bash
-npm install @chaeco/auto-router
+npm install github:chaeco/auto-router
 # or
-yarn add @chaeco/auto-router
+yarn add github:chaeco/auto-router
 ```
 
 ## Quick Start

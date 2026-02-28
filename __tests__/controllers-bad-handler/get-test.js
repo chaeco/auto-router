@@ -1,0 +1,1 @@
+export default { handler: "not-a-function", meta: {}, $__isRouteConfig: true }

@@ -1,4 +1,4 @@
-import { createHandler } from 'hoa-auto-router'
+import { createHandler } from 'auto-router'
 import { HoaContext } from 'hoa'
 
 export default createHandler(

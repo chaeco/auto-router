@@ -8,4 +8,4 @@ export type { RouteHandler, RouteMeta, RouteConfig, RouteInfo, AppRoutesRegistry
 
 // Utility function exports
 // 工具函数导出
-export { createHandler, isRouteConfig, HoaContext } from './handler'
+export { createHandler, isRouteConfig } from './handler'

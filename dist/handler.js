@@ -1,24 +1,25 @@
-import { HoaContext } from 'hoa';
 /**
  * Export convenient tool, only supports two usage patterns:
  * 导出便捷工具，仅支持两种用法：
  *
  * Usage 1: Pure function (recommended for most routes)
  * 用法 1：纯函数（推荐大多数路由）
- *    export default async (ctx: HoaContext) => {
- *      ctx.res.body = { success: true }
+ *    export default async (ctx) => {
+ *      ctx.body = { success: true }
  *    }
  *
  * Usage 2: createHandler wrapper (for routes that need metadata)
  * 用法 2：createHandler 包装（需要元数据的路由）
  *    export default createHandler(async (ctx) => {
- *      ctx.res.body = { success: true }
+ *      ctx.body = { success: true }
  *    }, { requiresAuth: true })
  */
 export function createHandler(handler, meta) {
     const config = {
         handler,
-        meta: meta || {},
+        // Normalize empty object {} to undefined so callers can safely use `if (config.meta)`
+        // 将空对象 {} 归一化为 undefined，使调用方可以安全地用 `if (config.meta)` 判断
+        meta: (meta && Object.keys(meta).length > 0) ? meta : undefined,
         $__isRouteConfig: true, // Mark this as an object created by createHandler
         // 标记这是 createHandler 创建的对象
     };
@@ -38,5 +39,4 @@ export function isRouteConfig(obj) {
         // 检查是否有 $__isRouteConfig 标记（由 createHandler 设置）
         obj.$__isRouteConfig === true);
 }
-export { HoaContext };
 //# sourceMappingURL=handler.js.map

@@ -1,7 +1,7 @@
 {
-  "name": "@chaeco/hoa-auto-router",
-  "version": "0.0.5",
-  "description": "File-based automatic router plugin for Hoa.js framework",
+  "name": "@chaeco/auto-router",
+  "version": "0.0.6",
+  "description": "File-based automatic router plugin for Node.js frameworks (Hoa, Express, Koa, Fastify, etc.)",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,13 +18,16 @@
     "README-zh.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "dev": "tsc --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "keywords": [
     "hoa",
+    "express",
+    "koa",
+    "fastify",
     "router",
     "auto-router",
     "file-based",
@@ -37,14 +40,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/chaeco/hoa-auto-router.git"
+    "url": "https://github.com/chaeco/auto-router.git"
   },
-  "homepage": "https://github.com/chaeco/hoa-auto-router#readme",
+  "homepage": "https://github.com/chaeco/auto-router#readme",
   "bugs": {
-    "url": "https://github.com/chaeco/hoa-auto-router/issues"
-  },
-  "peerDependencies": {
-    "hoa": "^0.3.0"
+    "url": "https://github.com/chaeco/auto-router/issues"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

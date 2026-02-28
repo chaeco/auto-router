@@ -5,48 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.0.6] - 2026-02-28
 
 ### Added
 
-- **Suffix support for dynamic parameters**: Files like `get-[id]-resources.ts` are now correctly parsed as `GET /api/:id/resources`
-- **HTTP method-only file names**: Files can now be named with just the HTTP method (e.g., `get.ts`, `post.ts`), and the route will be the directory path
-- **Prefix array support**: `prefix` parameter now accepts string arrays for registering routes with multiple prefixes
-- **Merged configuration support**: `autoRouter` now accepts an array of configurations for cleaner, more concise setup
-- Multi-level configuration support: Multiple `autoRouter` instances can now be used with different configurations
-- Each configuration maintains independent settings for `dir`, `prefix`, and `defaultRequiresAuth`
-- Route metadata automatically accumulates across multiple configurations without overwriting
-- Duplicate route detection now works across all configurations and instances
-- Added comprehensive test cases for prefix arrays, merged and separate configuration scenarios
+- **`forcePublic` / `forceProtected` bulk auth override** — explicitly declare which routes are always public or always protected, independent of `defaultRequiresAuth`
+  - Pattern formats: exact path, path without prefix, wildcard suffix `/*`, and `METHOD /path` method-prefix syntax
+  - `/*` wildcard intentionally matches sub-paths only, NOT the base path itself
+  - When both `forcePublic` and `forceProtected` match the same route, `forceProtected` wins (safer default)
+  - Post-load validation warnings: unused patterns, patterns overridden by explicit `createHandler` meta, conflicting patterns
+  - `HTTP_METHODS_UPPER` module-level constant for method-prefix pattern parsing
+  - `matchesFilter(routePath, routeMethod, pattern, prefix)` internal helper function
+- **`onLog` custom logging callback** — replaces console output entirely when provided; allows integration with any logging system
+- **`logging: false` now silences ALL log levels** — info, warn, and error are all suppressed (previously only `info` was suppressed)
+- **Falsy non-null export detection** — values like `false`, `0`, `''` now trigger an error log instead of being silently skipped
 
 ### Changed
 
-- `autoRouter` function signature now supports both single object and array of objects
-- `prefix` parameter now supports both string and string array types
-- Route registry is now shared across all `autoRouter` configurations to prevent duplicate routes
-- Updated README with prefix array examples and use cases
-- Updated README with merged configuration examples (recommended approach)
-- Added documentation for common scenarios using merged configuration: business modules, permission levels, and API versioning
-- Updated example code to demonstrate merged configuration pattern
+- **Framework decoupled** — removed `import { HoaContext } from 'hoa'` and all Hoa-specific coupling from `handler.ts`; `RouteHandler<TCtx = any>` is now a generic type that works with any single-context framework (Hoa, Koa, Fastify, etc.)
+- **Removed `peerDependencies.hoa`** from `package.json` — library no longer requires Hoa as peer dependency
+- **`createHandler` signature** — `meta` is now the second parameter: `createHandler(handler, meta?)` (was previously documented with reversed order)
+- **`meta: {}` normalized to `undefined`** — `createHandler(fn, {})` now stores `undefined` instead of `{}`; enables safe `if (config.meta)` checks
+- **Dead code removed** — the unreachable `if (strict)` block inside the plain-object dispatch branch (strict mode always exits earlier via the early check)
+- **`loadRoutes` dead default parameter removed** — this internal function is always called with explicit options from `autoRouter`; the unused default object has been removed
+- **`app.$routes?.` optional chaining replaced** — `app.$routes` is guaranteed to be initialized before use; replaced all `?.` with direct property access and removed redundant `|| 0` fallbacks
+- **Log alignment** — `padEnd(6)` → `padEnd(7)` to correctly align the `OPTIONS` method (7 chars) with other methods in log output
+- **`description` updated** to reflect framework-agnostic nature
+- **`keywords` expanded** with `express`, `koa`, `fastify`
+
+### Fixed
+
+- **`return` → `continue` in `scanDir` filename validation** — was aborting the entire directory scan instead of skipping only the invalid file
+- **`return` → `continue` in duplicate route detection** — same class of bug; duplicate detection now skips only the duplicate file
+- **`new URL('file://...')` → `pathToFileURL()`** — fixes path encoding issues on Windows (spaces, Unicode, drive letters)
+- **`validateDirPath` received full absolute path** — now correctly receives only the single directory segment (`file` rather than `filePath`)
+- **`onLog` double-logging** — added missing `return` after `onLog(level, message)` call to prevent console also printing
+- **`statSync` per-entry try-catch** — each entry's stat is now wrapped individually; a broken symlink or permission error no longer aborts the entire directory scan
+- **Recursive `scanDir` per-entry try-catch** — unreadable subdirectories are skipped gracefully; sibling files continue to be scanned
+- **`prefix || '/api'` collapsed empty string** — changed to `prefix !== undefined ? prefix : '/api'` so `prefix: ''` (no-prefix mode) is preserved correctly
+- **`prefix` trailing slash normalization** — `'/api/'` is normalized to `'/api'` to prevent double-slash route paths
+- **Non-strict mode plain object dead path** — plain objects with `handler` property were checked for strict mode but code flow never reached route registration; restructured so non-strict path correctly registers the route
+- **`.d.ts` files excluded** — TypeScript declaration files (`.d.ts`) matched `.endsWith('.ts')` and were incorrectly treated as route files; now excluded with `&& !file.endsWith('.d.ts')`
+- **`handler === undefined || handler === null` explicit check** — separated null/undefined (intentional, silent skip) from other falsy values (unexpected, error-logged)
+- **Stale `HoaContext` re-export removed** from `src/index.ts` — caused a TypeScript compile error after framework decoupling
+- **Unused `RouteConfig` import removed** from `src/auto-router.ts`
+- **`Object.assign(autoRouter, { load: loadRoutes })` removed** — was leaking an undocumented internal API onto the public export
+- **Unused `createHandler` import removed** from `src/__tests__/auto-router.test.ts`
 
 ## [0.0.1] - 2025-11-08
 
-### Initial Release
+### Added
 
-- Initial release of `@chaeco/hoa-auto-router`
-- File-based automatic routing system for Hoa.js framework
+- Initial release of `@chaeco/auto-router`
+- File-based automatic routing system
 - Support for nested directory structures
 - Built-in permission metadata with `requiresAuth` support
 - Dynamic parameter support using `[param]` syntax
 - Duplicate route detection and validation
 - TypeScript support with full type definitions
-- Integration with `@chaeco/hoa-jwt-permission` for automatic permission checking
 - Comprehensive test suite with Jest
-- Example project demonstrating usage
 - ESM module support
-- Peer dependency on `hoa: ^0.3.0`
 - Node.js >=16.0.0 requirement
 - MIT License
-- More configuration options
-- Performance optimizations
-- Extended documentation
+- HTTP method-only file names (`get.ts`, `post.ts`) — route maps to the directory path
+- Suffix support for dynamic parameters: `get-[id]-resources.ts` → `GET /api/:id/resources`
+- `prefix` array support — same controller directory registered under multiple prefixes
+- Merged array configuration support — pass an array of configs to `autoRouter()`
+- Multi-instance support — multiple `autoRouter` calls share `app.$registeredRoutes` for cross-instance duplicate detection
+- `strict` mode option — enforces function-only exports
+- `logging` option — controls console output
+- `defaultRequiresAuth` global permission default

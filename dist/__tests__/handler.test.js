@@ -8,11 +8,18 @@ describe('createHandler', () => {
         expect(config.meta).toEqual(meta);
         expect(isRouteConfig(config)).toBe(true);
     });
-    it('should create a RouteConfig with default meta if not provided', () => {
+    it('should create a RouteConfig with undefined meta if not provided', () => {
         const handler = async () => { };
         const config = createHandler(handler);
         expect(config.handler).toBe(handler);
-        expect(config.meta).toEqual({});
+        expect(config.meta).toBeUndefined();
+        expect(isRouteConfig(config)).toBe(true);
+    });
+    it('should normalize empty meta object {} to undefined', () => {
+        const handler = async () => { };
+        const config = createHandler(handler, {});
+        expect(config.handler).toBe(handler);
+        expect(config.meta).toBeUndefined();
         expect(isRouteConfig(config)).toBe(true);
     });
 });

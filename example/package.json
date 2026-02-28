@@ -1,7 +1,7 @@
 {
-  "name": "hoa-auto-router-example",
+  "name": "auto-router-example",
   "version": "1.0.0",
-  "description": "Example project demonstrating hoa-auto-router usage",
+  "description": "Example project demonstrating auto-router usage",
   "type": "module",
   "main": "app.js",
   "scripts": {
@@ -14,7 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "hoa": "^0.3.0",
-    "hoa-auto-router": "file:.."
+    "auto-router": "file:.."
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

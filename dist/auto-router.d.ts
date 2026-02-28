@@ -19,6 +19,18 @@
  *     false: 所有接口默认为公开，除非显式设置 requiresAuth: true
  *     - true: All interfaces are protected by default, unless explicitly set requiresAuth: false
  *     true: 所有接口默认为受保护，除非显式设置 requiresAuth: false
+ *   - forcePublic: Routes always treated as public, regardless of defaultRequiresAuth
+ *   forcePublic: 强制公开的路由列表，无论 defaultRequiresAuth 的值，这些路由始终为公开
+ *     - Supports exact paths (with or without prefix) and wildcard suffix /*
+ *     支持精确路径（带或不带前缀）及通配符后缀 /*
+ *     - Priority: createHandler explicit meta > forceProtected/forcePublic > defaultRequiresAuth
+ *     优先级：createHandler 显式 meta > forceProtected/forcePublic > defaultRequiresAuth
+ *   - forceProtected: Routes always treated as protected, regardless of defaultRequiresAuth
+ *   forceProtected: 强制保护的路由列表，无论 defaultRequiresAuth 的值，这些路由始终受保护
+ *     - Same pattern rules as forcePublic
+ *     与 forcePublic 相同的路径匹配规则
+ *     - When a route matches both forcePublic and forceProtected, forceProtected wins
+ *     当路由同时命中 forcePublic 和 forceProtected 时，forceProtected 优先
  *   - strict: Strict mode (default: true)
  *   strict: 严格模式（默认：true）
  *     - true: Only allow pure function and createHandler export methods, prohibit other object exports
@@ -27,6 +39,10 @@
  *     false: 允许普通对象 { handler, meta } 的导出方式，但会显示警告
  *   - logging: Whether to output route registration logs (default: true)
  *   logging: 是否输出路由注册日志（默认：true）
+ *     - true: All log levels (info / warn / error) are printed to console
+ *     true: 所有日志级别（info / warn / error）均输出到控制台
+ *     - false: All console output is suppressed; use onLog if you still need error/warn
+ *     false: 完全静默，若仍需警告/错误信息请配合 onLog 使用
  *   - onLog: Custom logging callback for integration with own logging systems
  *   onLog: 自定义日志输出回调，方便集成自己的日志系统
  *
@@ -68,6 +84,8 @@ export declare function autoRouter(options?: {
     defaultRequiresAuth?: boolean;
     strict?: boolean;
     logging?: boolean;
+    forcePublic?: string[];
+    forceProtected?: string[];
     onLog?: (level: 'info' | 'warn' | 'error', message: string) => void;
 } | Array<{
     dir?: string;
@@ -75,6 +93,8 @@ export declare function autoRouter(options?: {
     defaultRequiresAuth?: boolean;
     strict?: boolean;
     logging?: boolean;
+    forcePublic?: string[];
+    forceProtected?: string[];
     onLog?: (level: 'info' | 'warn' | 'error', message: string) => void;
 }>): (app: any) => Promise<void>;
 //# sourceMappingURL=auto-router.d.ts.map

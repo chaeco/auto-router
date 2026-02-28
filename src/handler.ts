@@ -1,10 +1,24 @@
-import { HoaContext } from 'hoa'
-
 /**
  * Route handler type
  * 路由处理器类型
+ *
+ * Supports both single-context and dual-parameter frameworks via two generic params.
+ * 通过两个泛型参数同时支持单 context 框架和双参数框架。
+ *
+ * - Single-context (default, TRes = void): (ctx: TCtx) => any
+ *   适用于：Hoa、Koa、Fastify 等单 context 框架
+ * - Dual-parameter (TRes provided): (req: TCtx, res: TRes) => any
+ *   适用于：Express 等 (req, res) 双参数框架
+ *
+ * @example Hoa / Koa style:    RouteHandler<HoaContext>
+ * @example Express style:      RouteHandler<express.Request, express.Response>
+ * @example Fastify style:      RouteHandler<FastifyRequest>
+ * @example Generic (any):      RouteHandler  (default TCtx = any, TRes = void)
  */
-export type RouteHandler = (ctx: HoaContext) => Promise<any> | any
+export type RouteHandler<TCtx = any, TRes = void> =
+  [TRes] extends [void]
+  ? (ctx: TCtx) => Promise<any> | any
+  : (req: TCtx, res: TRes) => Promise<any> | any
 
 /**
  * Route metadata interface
@@ -62,12 +76,12 @@ export interface AppRoutesRegistry {
  * Only supports return value of createHandler function
  * 仅支持 createHandler 函数返回值
  */
-export interface RouteConfig {
+export interface RouteConfig<TCtx = any, TRes = void> {
   /**
    * Route handler function
    * 路由处理器函数
    */
-  handler: RouteHandler
+  handler: RouteHandler<TCtx, TRes>
 
   /**
    * Route metadata
@@ -82,21 +96,23 @@ export interface RouteConfig {
  *
  * Usage 1: Pure function (recommended for most routes)
  * 用法 1：纯函数（推荐大多数路由）
- *    export default async (ctx: HoaContext) => {
- *      ctx.res.body = { success: true }
+ *    export default async (ctx) => {
+ *      ctx.body = { success: true }
  *    }
  *
  * Usage 2: createHandler wrapper (for routes that need metadata)
  * 用法 2：createHandler 包装（需要元数据的路由）
  *    export default createHandler(async (ctx) => {
- *      ctx.res.body = { success: true }
+ *      ctx.body = { success: true }
  *    }, { requiresAuth: true })
  */
 
-export function createHandler(handler: RouteHandler, meta?: RouteMeta): RouteConfig {
+export function createHandler<TCtx = any, TRes = void>(handler: RouteHandler<TCtx, TRes>, meta?: RouteMeta): RouteConfig<TCtx, TRes> {
   const config: any = {
     handler,
-    meta: meta || ({} as RouteMeta),
+    // Normalize empty object {} to undefined so callers can safely use `if (config.meta)`
+    // 将空对象 {} 归一化为 undefined，使调用方可以安全地用 `if (config.meta)` 判断
+    meta: (meta && Object.keys(meta).length > 0) ? meta : undefined,
     $__isRouteConfig: true, // Mark this as an object created by createHandler
     // 标记这是 createHandler 创建的对象
   }
@@ -119,5 +135,3 @@ export function isRouteConfig(obj: any): obj is RouteConfig {
     obj.$__isRouteConfig === true
   )
 }
-
-export { HoaContext }

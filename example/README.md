@@ -1,6 +1,6 @@
 # Hoa Auto Router Example
 
-这是一个展示如何使用 `hoa-auto-router` 插件的示例项目。
+这是一个展示如何使用 `auto-router` 插件的示例项目。
 
 ## 项目结构
 
@@ -27,7 +27,7 @@ cd example
 npm install
 ```
 
-注意：这个示例使用了本地包 `hoa-auto-router`，需要在上级目录先构建包：
+注意：这个示例使用了本地包 `auto-router`，需要在上级目录先构建包：
 
 ```bash
 cd ..
@@ -95,7 +95,7 @@ app.extend(
 
 ```typescript
 import { Hoa } from 'hoa'
-import { autoRouter } from 'hoa-auto-router'
+import { autoRouter } from 'auto-router'
 
 const app = new Hoa()
 

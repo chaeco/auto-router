@@ -9,6 +9,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./worker-manifest": {
+      "import": "./dist/worker-manifest.js",
+      "types": "./dist/worker-manifest.d.ts"
     }
   },
   "files": [
@@ -21,7 +25,8 @@
     "build": "rm -rf dist && tsc",
     "dev": "tsc --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "build:worker-manifest": "npx tsx src/build-worker-manifest.ts ./controllers ./dist/worker-routes.ts"
   },
   "keywords": [
     "hoa",

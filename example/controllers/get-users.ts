@@ -1,6 +1,4 @@
-import { HoaContext } from 'hoa'
-
-export default async function (ctx: HoaContext) {
+export default async function (ctx) {
   ctx.res.body = {
     message: 'Hello from auto-router!',
     users: [

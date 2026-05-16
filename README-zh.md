@@ -15,13 +15,14 @@ Node.js 框架的文件式自动路由插件（支持 Hoa、Koa、Fastify、Expr
 - 🌍 全局 `defaultRequiresAuth` 配置
 - 🎛️ `forcePublic` / `forceProtected` 批量权限覆盖，支持方法前缀规则语法
 - 📢 通过 `onLog` 回调自定义日志输出
+- ⛅ Cloudflare Workers 支持，通过静态清单（`createWorkerRouter` + 构建 CLI）实现
 
 ## 安装
 
 ```bash
-npm install github:chaeco/auto-router
+npm install github:chaeco/auto-router#cf
 # 或
-yarn add github:chaeco/auto-router
+yarn add github:chaeco/auto-router#cf
 ```
 
 ## 快速开始
@@ -528,6 +529,54 @@ app.extend(autoRouter({
 - 在路由文件名中使用复杂逻辑
 - 在 `controllers/` 目录之外创建路由
 - 修改 API 权限行为后忘记同步更新权限配置
+
+## Cloudflare Workers
+
+Cloudflare Workers 不支持运行时动态 `import()`。`@chaeco/auto-router` 通过两步方案解决：构建阶段 CLI 扫描控制器文件生成静态清单，运行时由 `createWorkerRouter` 轻量分发。
+
+### 第一步：生成清单
+
+```bash
+npx tsx node_modules/@chaeco/auto-router/dist/build-worker-manifest.js ./controllers ./dist/worker-routes.ts
+```
+
+此命令将扫描到的所有路由文件生成静态 import，写入 `dist/worker-routes.ts`。可加入构建流程：
+
+```json
+{
+  "scripts": {
+    "build:manifest": "npx tsx node_modules/@chaeco/auto-router/dist/build-worker-manifest.js ./controllers ./dist/worker-routes.ts"
+  }
+}
+```
+
+### 第二步：在 Worker 中使用清单
+
+```typescript
+import { createWorkerRouter } from '@chaeco/auto-router/worker-manifest'
+import { routes } from './worker-routes' // 第一步生成
+
+const router = createWorkerRouter({
+  routes,
+  notFound: (ctx) => {
+    ctx.res.status = 404
+    ctx.res.body = { error: 'Not Found' }
+  },
+  onError: (err) => new Response('Internal Server Error', { status: 500 }),
+})
+
+export default router // { fetch: (req, env, ctx) => Response }
+```
+
+### `createWorkerRouter(options)`
+
+| 选项 | 类型 | 说明 |
+|------|------|------|
+| `routes` | `WorkerManifestRoute[]` | 路由清单数组（由构建 CLI 生成） |
+| `notFound` | `(ctx) => any` | 自定义 404 处理器（可选） |
+| `onError` | `(err, req) => Response` | 全局错误处理器（可选） |
+
+每个路由处理器接收 `WorkerRouteContext`，包含 `{ req, env, ctx, params, res }`。返回 `Response` 会直接使用，其他返回值自动序列化为 JSON。
 
 ## 许可证
 

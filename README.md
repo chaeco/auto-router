@@ -1,7 +1,7 @@
 # @chaeco/auto-router
 
 [![npm version](https://badge.fury.io/js/%40chaeco%2Fauto-router.svg)](https://badge.fury.io/js/%40chaeco%2Fauto-router)
-[![codecov](https://codecov.io/gh/chaeco/auto-router/branch/main/graph/badge.svg)](https://codecov.io/gh/chaeco/auto-router)
+[![codecov](https://codecov.io/gh/chaeco/auto-router/branch/cf/graph/badge.svg)](https://codecov.io/gh/chaeco/auto-router)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
 
@@ -20,13 +20,14 @@ File-based automatic router plugin for Node.js frameworks (Hoa, Koa, Fastify, Ex
 - 🌍 Global `defaultRequiresAuth` configuration
 - 🎛️ `forcePublic` / `forceProtected` bulk auth overrides with method-prefix pattern support
 - 📢 Custom logging via `onLog` callback
+- ⛅ Cloudflare Workers support via static manifest (`createWorkerRouter` + build CLI)
 
 ## Installation
 
 ```bash
-npm install github:chaeco/auto-router
+npm install github:chaeco/auto-router#cf
 # or
-yarn add github:chaeco/auto-router
+yarn add github:chaeco/auto-router#cf
 ```
 
 ## Quick Start
@@ -566,6 +567,31 @@ app.extend(autoRouter({
 - Create routes outside `controllers/` directory
 - Forget to update permission config when changing API behavior
 
+## Cloudflare Workers
+
+Cloudflare Workers don't support dynamic `import()` at runtime. `@chaeco/auto-router` solves this with a two-step approach: a build-time CLI scans your controller files and generates a static manifest, and `createWorkerRouter` provides a lightweight runtime dispatcher.
+
+### Step 1: Generate the manifest
+
+```bash
+npx tsx node_modules/@chaeco/auto-router/dist/build-worker-manifest.js ./controllers ./dist/worker-routes.ts
+```
+
+This writes `dist/worker-routes.ts` with static imports for every route file it finds. Add it to your build pipeline:
+
+```json
+{
+  "scripts": {
+    "build:manifest": "npx tsx node_modules/@chaeco/auto-router/dist/build-worker-manifest.js ./controllers ./dist/worker-routes.ts"
+  }
+}
+```
+
+### Step 2: Use the manifest in your Worker
+
+```typescript
+import { createWorkerRouter } from '@chaeco/auto-router/worker-manifest'
+import { routes } from './worker-re... truncated ...
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -1,3 +1,0 @@
-name = "auto-router-worker-example"
-main = "worker.example.ts"
-compatibility_date = "2024-01-01"

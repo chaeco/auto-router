@@ -1,6 +1,6 @@
 {
   "name": "@chaeco/auto-router",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "File-based automatic router plugin for Node.js frameworks (Hoa, Express, Koa, Fastify, etc.)",
   "type": "module",
   "main": "dist/index.js",
@@ -9,24 +9,25 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    },
-    "./worker-manifest": {
-      "import": "./dist/worker-manifest.js",
-      "types": "./dist/worker-manifest.d.ts"
     }
   },
   "files": [
     "dist",
+    ".claude/skills/auto-router",
+    ".codex/skills/auto-router",
+    "scripts/init-skills.js",
     "CHANGELOG.md",
     "README.md",
     "README-zh.md"
   ],
+  "bin": {
+    "auto-router-init-skills": "scripts/init-skills.js"
+  },
   "scripts": {
     "build": "rm -rf dist && tsc",
     "dev": "tsc --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "build:worker-manifest": "npx tsx src/build-worker-manifest.ts ./controllers ./dist/worker-routes.ts"
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "keywords": [
     "hoa",

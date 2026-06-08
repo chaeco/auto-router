@@ -5,593 +5,737 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
 
-File-based automatic router plugin for Node.js frameworks (Hoa, Koa, Fastify, Express, etc.).
+File-based automatic router plugin for Node.js frameworks (Hoa, Koa, Fastify, Express, etc.). Map your filesystem to HTTP routes — no manual route registration.
 
 ## Features
 
-- 🚀 Zero-config automatic routing based on file structure
+- 🚀 Zero-config automatic routing from file structure
 - 📁 Nested directory support with automatic path building
-- 🔒 Built-in permission metadata (`requiresAuth`) support
-- 🔍 Built-in validation for file naming and parameters
-- 📝 Type-safe with full TypeScript support — `RouteHandler<TCtx, TRes>` generic, no framework coupling
-- ⚡ Dynamic parameter support `[param]` syntax
-- 🛡️ Duplicate route detection across all `autoRouter` instances
-- 🎯 Async handler support
-- 🌍 Global `defaultRequiresAuth` configuration
-- 🎛️ `forcePublic` / `forceProtected` bulk auth overrides with method-prefix pattern support
+- ⚡ Dynamic parameter `[param]` syntax — single and multi-parameter routes
+- 🔒 Built-in auth metadata (`requiresAuth`) with fine-grained `forcePublic` / `forceProtected` overrides
+- 🔍 Built-in validation for file naming, parameters, and duplicate routes
+- 📝 Full TypeScript support — `RouteHandler<TCtx, TRes>` generic, framework-agnostic
+- 🛡️ Cross-instance duplicate route detection via shared `app.$registeredRoutes`
+- 🎛️ Prefix array support — same controllers under multiple prefixes
+- 🧩 Merged multi-configuration support — one call, many directories
 - 📢 Custom logging via `onLog` callback
-- ⛅ Cloudflare Workers support via static manifest (`createWorkerRouter` + build CLI)
+- 🌐 `staticAutoRouter` for runtimes without filesystem access (edge functions, bundled apps)
+
+---
 
 ## Installation
 
 ```bash
-npm install github:chaeco/auto-router#cf
-# or
-yarn add github:chaeco/auto-router#cf
+npm install @chaeco/auto-router
 ```
 
-## Quick Start
+### AI Tool Skills
 
-### Basic Setup
+This package includes AI agent skills for Claude Code and OpenAI Codex. After installation, run this once:
+
+```bash
+npx auto-router-init-skills
+```
+
+This copies skill files into your project's `.claude/skills/auto-router/` and `.codex/skills/auto-router/`. AI tools will then enforce file naming rules, export conventions, auth patterns, and best practices when creating routes.
+
+---
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [File Naming Convention](#file-naming-convention)
+  - [Basic formats](#basic-formats)
+  - [Single parameter](#single-parameter)
+  - [Multiple parameters](#multiple-parameters)
+  - [Dynamic directory names](#dynamic-directory-names)
+  - [Choosing flat files vs nested directories](#choosing-flat-files-vs-nested-directories)
+  - [Route conversion rules (reference)](#route-conversion-rules-reference)
+- [Export Methods](#export-methods)
+  - [Method 1: Pure function](#method-1-pure-function)
+  - [Method 2: createHandler wrapper](#method-2-createhandler-wrapper)
+  - [Strict mode](#strict-mode)
+- [Auth & Permissions](#auth--permissions)
+  - [Configuration modes](#configuration-modes)
+  - [forcePublic / forceProtected](#forcepublic--forceprotected)
+  - [Pattern formats](#pattern-formats)
+  - [Priority chain](#priority-chain)
+  - [Conflict resolution](#conflict-resolution)
+  - [Warnings for unused patterns](#warnings-for-unused-patterns)
+- [Configuration](#configuration)
+  - [Single configuration](#single-configuration)
+  - [Prefix array](#prefix-array)
+  - [Merged configuration (array)](#merged-configuration-array)
+  - [Multiple calls](#multiple-calls)
+  - [No prefix](#no-prefix)
+- [Route Registry](#route-registry)
+- [Type Safety](#type-safety)
+- [Logging](#logging)
+- [Validation Rules](#validation-rules)
+- [Best Practices](#best-practices)
+- [Runtimes Without Filesystem Access](#runtimes-without-filesystem-access)
+- [API Reference](#api-reference)
+  - [autoRouter(options)](#autorouteroptions)
+  - [staticAutoRouter(options)](#staticautorouteroptions)
+  - [createHandler(handler, meta?)](#createhandlerhandler-meta)
+  - [isRouteConfig(obj)](#isrouteconfigobj)
+  - [Exported types](#exported-types)
+- [License](#license)
+
+---
+
+## Quick Start
 
 ```typescript
 import { autoRouter } from '@chaeco/auto-router'
 
-// Works with Hoa, Koa, Fastify, or any framework that exposes app[method](path, handler)
 const app = new YourFramework()
 
 app.extend(
   autoRouter({
     dir: './controllers',
     prefix: '/api',
-    defaultRequiresAuth: false, // Blacklist mode: public by default
-    strict: true,               // Strict mode (default)
   })
 )
 
 app.listen(3000)
 ```
 
-### Strict Mode
+Given this filesystem:
 
-**Strict Mode (`strict: true`) — Recommended**:
+```
+controllers/
+  get-users.ts                                      → GET /api/users
+  get-[id].ts                                       → GET /api/:id
+  post-login.ts                                     → POST /api/login
+  get-[userId]-posts.ts                             → GET /api/:userId/posts
+  get-[userId]-[postId].ts                          → GET /api/:userId/:postId
+  users/
+    [userId]/
+      posts/
+        get.ts                                      → GET /api/users/:userId/posts
+        get-[id].ts                                 → GET /api/users/:userId/posts/:id
+      settings/
+        get.ts                                      → GET /api/users/:userId/settings
+  admin/
+    get-dashboard.ts                                → GET /api/admin/dashboard
+```
 
-- ✅ Only pure function exports allowed
-- ✅ Only `createHandler()` wrapped exports allowed
-- ❌ Plain object exports `{ handler, meta }` rejected
-- 🎯 Enforces consistent team code style
+No manual `app.get(...)` calls needed. Every `.ts` file becomes a route.
 
-**Non-Strict Mode (`strict: false`)**:
+---
 
-- ✅ All export formats allowed (plain objects accepted with warning)
-- ⚠️ Prints a warning for non-recommended export styles
-- 💡 Useful for backward compatibility or gradual migration
+## File Naming Convention
 
-### File Naming Convention
+Every route file name encodes the **HTTP method** and the **URL structure**. The auto-router parses the file name and converts it into a framework route registration.
 
-File naming supports two formats:
+### Basic formats
 
-1. **HTTP method only**: `get.ts`, `post.ts`, etc. → Route is the current directory path
-2. **Method + route name**: `get-users.ts`, `post-login.ts`, etc.
+| File name | Registers |
+|-----------|-----------|
+| `get.ts` | `GET /api` (at root directory — route is the directory path) |
+| `post.ts` | `POST /api` |
+| `admin/get.ts` | `GET /api/admin` |
+| `users/post.ts` | `POST /api/users` |
+| `get-users.ts` | `GET /api/users` |
+| `post-login.ts` | `POST /api/login` |
 
-### Examples
+**Rule:** A file named exactly `{method}.ts` uses the **directory path** as the route. A file named `{method}-{name}.ts` appends `name` to the directory path.
 
-**Single Parameter:**
+### Single parameter
 
-- `get.ts` → `GET /api` (at root directory)
-- `admin/get.ts` → `GET /api/admin`
-- `post-login.ts` → `POST /api/login`
-- `get-users.ts` → `GET /api/users`
-- `get-[id].ts` → `GET /api/:id`
-- `delete-[id].ts` → `DELETE /api/:id`
+Wrap the parameter name in square brackets `[]`. It becomes an Express-style `:param` path segment.
 
-**Multiple Parameters:**
+| File name | Registers |
+|-----------|-----------|
+| `get-[id].ts` | `GET /api/:id` |
+| `delete-[id].ts` | `DELETE /api/:id` |
+| `get-[userId].ts` | `GET /api/:userId` |
+| `post-[type].ts` | `POST /api/:type` |
 
-- `get-[userId]-[postId].ts` → `GET /api/:userId/:postId`
-- `put-[userId]-profile.ts` → `PUT /api/:userId/profile`
-- `get-[id]-resources.ts` → `GET /api/:id/resources`
+### Multiple parameters
 
-**Nested Directories:**
+Multiple `[param]` segments in the file name are separated by `-`. Each `-` between two segments becomes a `/` in the URL.
 
-- `users/get.ts` → `GET /api/users`
-- `users/post.ts` → `POST /api/users`
-- `users/posts/get-[id].ts` → `GET /api/users/posts/:id`
+| File name | Registers | Pattern |
+|-----------|-----------|---------|
+| `get-[userId]-posts.ts` | `GET /api/:userId/posts` | param + static |
+| `get-users-[id].ts` | `GET /api/users/:id` | static + param |
+| `get-[userId]-[postId].ts` | `GET /api/:userId/:postId` | param + param |
+| `put-[userId]-profile.ts` | `PUT /api/:userId/profile` | param + static |
+| `get-[org]-settings-[key].ts` | `GET /api/:org/settings/:key` | param + static + param |
+| `get-[a]-[b]-[c].ts` | `GET /api/:a/:b/:c` | three consecutive params |
 
-## Permission Metadata
+### Dynamic directory names
 
-### Two Supported Export Methods
+Directory names can also contain `[param]` brackets. This is the recommended way to express resource hierarchies with more than two levels of nesting.
 
-#### Method 1: Pure Function (Recommended for most routes)
+| File path | Registers |
+|-----------|-----------|
+| `users/[userId]/get.ts` | `GET /api/users/:userId` |
+| `users/[userId]/posts/get.ts` | `GET /api/users/:userId/posts` |
+| `users/[userId]/posts/[postId]/get.ts` | `GET /api/users/:userId/posts/:postId` |
+| `users/[userId]/posts/get-[id].ts` | `GET /api/users/:userId/posts/:id` |
+
+Dynamic directories and file-level params compose naturally — directory params are processed first during recursive scanning, then file name params are appended.
+
+### Choosing flat files vs nested directories
+
+A route like `GET /api/users/:userId/posts/:postId/comments/:commentId` can be expressed two ways:
+
+| Approach | File path | Verdict |
+|----------|-----------|---------|
+| Flat file | `get-users-[userId]-posts-[postId]-comments-[commentId].ts` | ❌ 60+ chars, unreadable |
+| Nested directories | `users/[userId]/posts/[postId]/comments/get-[commentId].ts` | ✅ Each segment is short and clear |
+
+**Rule of thumb:**
+
+- **≤ 3 path segments** (method + 2 hyphens): flat file is fine — `get-[userId]-posts.ts`
+- **> 3 path segments**: use nested directories — `users/[userId]/posts/get-[id].ts`
+- **Resource hierarchies** naturally map to directories — `users/`, `posts/`, `comments/` are directory trees, not flat file name prefixes
+
+### Route conversion rules (reference)
+
+The file name `routeName` (everything after `method-`) goes through three regex passes:
+
+```
+1. [param]       → :param        (bracket → colon prefix)
+2. -:/           → /:            (dash before colon → slash before colon)
+3. :param-/      → :param/       (colon segment before dash → slash after)
+```
+
+**Important:** The `-` character is **always** interpreted as a path separator. You cannot express a literal hyphen in a route path via file naming. If your route must contain a literal `-` (e.g., `/api/user-settings`), use a directory structure or configure the route manually.
+
+---
+
+## Export Methods
+
+### Method 1: Pure function
+
+The simplest form. The route inherits the global `defaultRequiresAuth` setting.
 
 ```typescript
 // controllers/get-users.ts
-export default async ctx => {
+export default async (ctx) => {
   ctx.res.body = { users: [] }
 }
-// Uses global defaultRequiresAuth configuration
 ```
 
-#### Method 2: createHandler Wrapper (When permission metadata is needed)
+### Method 2: createHandler wrapper
+
+Use when you need per-route metadata (auth, description, custom fields).
 
 ```typescript
 import { createHandler } from '@chaeco/auto-router'
 
-// controllers/users/get-info.ts - Protected route
+// Protected route
 export default createHandler(
-  async ctx => {
+  async (ctx) => {
     ctx.res.body = { success: true, data: { userId: ctx.currentUser?.id } }
   },
-  { requiresAuth: true, description: '获取用户信息' }
+  { requiresAuth: true, description: 'Get current user info' }
 )
 
-// controllers/auth/post-login.ts - Public route
+// Public route (overrides a global defaultRequiresAuth: true)
 export default createHandler(
-  async ctx => {
+  async (ctx) => {
     ctx.res.body = { success: true }
   },
   { requiresAuth: false }
 )
 ```
 
-### Configuration Modes
+The `meta` object accepts `requiresAuth`, `description`, and any custom `[key: string]: any` fields.
 
-**Blacklist Mode (Recommended for public APIs)**:
+### Strict mode
+
+| Setting | Pure function | `createHandler()` | Plain `{ handler, meta }` |
+|---------|:---:|:---:|:---:|
+| `strict: true` (default) | ✅ | ✅ | ❌ Rejected |
+| `strict: false` | ✅ | ✅ | ⚠️ Accepted with warning |
+
+**Strict mode is on by default.** It enforces consistent export style across the codebase. Use non-strict mode only for gradual migration or backward compatibility.
 
 ```typescript
-autoRouter({
-  defaultRequiresAuth: false,  // Public by default
-})
+// Strict mode (default) — plain objects are rejected
+autoRouter({ dir: './controllers', strict: true })
 
-// Only mark routes that need protection
+// Non-strict mode — plain objects accepted with a warning
+autoRouter({ dir: './controllers', strict: false })
+```
+
+---
+
+## Auth & Permissions
+
+### Configuration modes
+
+**Blacklist mode** (public-by-default): mark only protected routes.
+
+```typescript
+autoRouter({ dir: './controllers', defaultRequiresAuth: false })
+```
+
+```typescript
+// Only this route needs an explicit auth marker
 export default createHandler(async (ctx) => { ... }, { requiresAuth: true })
 ```
 
-**Whitelist Mode (Recommended for internal APIs)**:
+**Whitelist mode** (protected-by-default): mark only public routes.
 
 ```typescript
-autoRouter({
-  defaultRequiresAuth: true,  // Protected by default
-})
+autoRouter({ dir: './controllers', defaultRequiresAuth: true })
+```
 
-// Only mark routes that should be public
+```typescript
+// Only this route needs an explicit public marker
 export default createHandler(async (ctx) => { ... }, { requiresAuth: false })
 ```
 
-## Force Override Route Auth
+### forcePublic / forceProtected
 
-`forcePublic` and `forceProtected` let you explicitly declare which routes are always public or always protected, **independent of `defaultRequiresAuth`**.
-
-> **Priority:** `createHandler` explicit meta → `forceProtected` / `forcePublic` → `defaultRequiresAuth`  
-> When a route matches both `forcePublic` and `forceProtected`, `forceProtected` wins (safer).
-
-**Pattern formats:**
-
-| Format | Example | Description |
-|--------|---------|-------------|
-| Path only | `'/api/users'` | Matches all HTTP methods on that path |
-| Path only (no prefix) | `'/users'` | Same, prefix is optional |
-| Wildcard | `'/api/admin/*'` | Matches all sub-routes (all methods) |
-| Method + path | `'POST /api/users'` | Matches **only** POST; GET is unaffected |
-| Method + wildcard | `'DELETE /api/admin/*'` | Matches only DELETE under that path |
-
-### Force Public (`forcePublic`)
-
-Login, registration, guest API, public docs — always public regardless of the global default:
+Bulk auth overrides that apply across many routes at once, **independent of `defaultRequiresAuth`**.
 
 ```typescript
 autoRouter({
   dir: './controllers',
   prefix: '/api',
-  defaultRequiresAuth: true,  // protected by default
+  defaultRequiresAuth: true,         // protected by default
   forcePublic: [
-    '/api/auth/login',   // with prefix: exact match (all methods)
-    '/auth/register',    // without prefix: also matches /api/auth/register
-    '/api/public/*',     // wildcard: sub-paths only (/api/public/docs ✅, /api/public itself ❌)
+    '/api/auth/login',               // login is always public
+    '/api/auth/register',            // register is always public
+    '/api/public/*',                 // everything under /api/public/ is public
   ],
-})
-// POST /api/auth/login    → requiresAuth: false (force public)
-// POST /api/auth/register → requiresAuth: false (force public)
-// GET  /api/public/docs   → requiresAuth: false (force public)
-// GET  /api/public        → requiresAuth: true  (/* does NOT match the base path itself)
-// GET  /api/users         → requiresAuth: true  (default)
-```
-
-### Force Protected (`forceProtected`)
-
-Admin panel, sensitive APIs — always protected regardless of the global default:
-
-```typescript
-autoRouter({
-  dir: './controllers',
-  prefix: '/api',
-  defaultRequiresAuth: false,  // public by default
   forceProtected: [
-    '/api/admin/*',   // wildcard: /api/admin/users ✅, /api/admin itself ❌
-    '/api/user/me',   // exact match (all methods)
+    '/api/admin/*',                  // everything under /api/admin/ is protected
+    'POST /api/users',               // only POST /api/users is protected; GET stays public
   ],
 })
-// GET  /api/admin/users → requiresAuth: true  (force protected)
-// GET  /api/user/me     → requiresAuth: true  (force protected)
-// GET  /api/products    → requiresAuth: false (default)
 ```
 
-### Method-specific Override
+### Pattern formats
 
-When different HTTP methods on the same path need different auth, use the `METHOD /path` format:
+| Format | Example | Matches |
+|--------|---------|---------|
+| Exact path (with prefix) | `'/api/users'` | All methods on `/api/users` exactly |
+| Exact path (without prefix) | `'/users'` | Same as above when prefix is `/api` |
+| Wildcard | `'/api/admin/*'` | All methods on `/api/admin/foo`, `/api/admin/foo/bar`, etc. — **NOT** `/api/admin` itself |
+| Method + exact path | `'POST /api/users'` | Only POST on `/api/users`; GET is unaffected |
+| Method + wildcard | `'DELETE /api/admin/*'` | Only DELETE under `/api/admin/` |
+
+**Wildcard note:** `/*` intentionally matches sub-paths only, not the base path. Use an additional exact-pattern entry if you need the base path covered too:
 
 ```typescript
-autoRouter({
-  dir: './controllers',
-  prefix: '/api',
-  defaultRequiresAuth: false,  // public by default
-  forceProtected: [
-    'POST /api/users',    // creating a user requires auth
-    'DELETE /api/users',  // deleting requires auth
-    // Note: GET /api/users is not listed, stays public
-  ],
-})
-// GET    /api/users → requiresAuth: false (default)
-// POST   /api/users → requiresAuth: true  (force protected)
-// DELETE /api/users → requiresAuth: true  (force protected)
+forceProtected: [
+  '/api/admin',       // covers /api/admin itself
+  '/api/admin/*',     // covers /api/admin/users, /api/admin/settings, etc.
+]
 ```
 
-### Combined Usage
+### Priority chain
 
-`forcePublic` and `forceProtected` can be used together, each independently enforcing their respective auth state:
-
-```typescript
-autoRouter({
-  dir: './controllers',
-  prefix: '/api',
-  defaultRequiresAuth: false,
-  forcePublic: ['/api/auth/*'],     // auth routes always public
-  forceProtected: ['/api/admin/*'], // admin routes always protected
-})
+```
+createHandler explicit meta  >  forceProtected / forcePublic  >  defaultRequiresAuth
 ```
 
-## Prefix Array Support
+1. **Explicit meta wins.** If a route uses `createHandler(fn, { requiresAuth: true })`, no `forcePublic` pattern can override it.
+2. **force rules override global default.** A `forceProtected` pattern promotes a route to protected even when `defaultRequiresAuth: false`.
+3. **Default is the fallback.** When no explicit meta and no force pattern matches, `defaultRequiresAuth` applies.
 
-The `prefix` parameter supports string arrays, allowing the same controller directory to be registered with multiple prefixes:
+### Conflict resolution
+
+When the same route matches **both** `forcePublic` and `forceProtected`:
+
+- `forceProtected` wins (safer default)
+- A warning is logged identifying the conflict
+
+When a `forcePublic` or `forceProtected` pattern matches a route that has **explicit `createHandler` meta**:
+
+- The explicit meta wins
+- A warning is logged: the force pattern "has no effect"
+
+### Warnings for unused patterns
+
+After all routes are loaded, the auto-router checks whether every `forcePublic` and `forceProtected` pattern matched at least one registered route. Unmatched patterns get a warning — this catches typos and stale config entries:
+
+```
+⚠️  forcePublic pattern "/api/nonexistent-route" did not match any registered route
+   (check for typos or outdated config)
+```
+
+---
+
+## Configuration
+
+### Single configuration
 
 ```typescript
-import { autoRouter } from '@chaeco/auto-router'
-
-// Works with any framework that exposes app[method](path, handler)
-const app = new YourFramework()
-
-// Register the same directory with multiple prefixes
 app.extend(
   autoRouter({
     dir: './controllers',
-    prefix: ['/api', '/v1', '/v2'],  // Array supported
-  })
-)
-
-// Now get-users.ts will be registered as:
-// GET /api/users
-// GET /v1/users
-// GET /v2/users
-
-app.listen(3000)
-```
-
-**Use Cases:**
-
-```typescript
-// Scenario 1: API version compatibility
-app.extend(
-  autoRouter({
-    dir: './controllers/v2',
-    prefix: ['/api', '/v2'],  // Support both old and new prefixes
-  })
-)
-
-// Scenario 2: Multi-language support
-app.extend(
-  autoRouter({
-    dir: './controllers',
-    prefix: ['/api', '/zh', '/en'],
-  })
-)
-```
-
-## Multi-Level Configuration
-
-`auto-router` supports two approaches for configuring multiple route directories:
-
-### Approach 1: Merged Configuration (Recommended)
-
-Configure multiple directories at once using an array:
-
-```typescript
-import { autoRouter } from '@chaeco/auto-router'
-
-const app = new YourFramework()
-
-// Merged configuration - configure multiple directories at once
-app.extend(
-  autoRouter([
-    {
-      dir: './src/controllers/admin',
-      defaultRequiresAuth: false,
-      prefix: '/api/admin',
-    },
-    {
-      dir: './src/controllers/client',
-      defaultRequiresAuth: true,
-      prefix: '/api/client',
-    },
-  ])
-)
-
-// Even with a single configuration, array form is supported (for consistency)
-app.extend(
-  autoRouter([
-    {
-      dir: './controllers',
-      prefix: '/api',
-    },
-  ])
-)
-
-app.listen(3000)
-```
-
-### Approach 2: Multiple Calls
-
-Call `autoRouter` multiple times separately:
-
-```typescript
-import { autoRouter } from '@chaeco/auto-router'
-
-const app = new YourFramework()
-
-// Admin routes
-app.extend(
-  autoRouter({
-    dir: './src/controllers/admin',
+    prefix: '/api',
     defaultRequiresAuth: false,
-    prefix: '/api/admin',
   })
 )
-
-// Client routes
-app.extend(
-  autoRouter({
-    dir: './src/controllers/client',
-    defaultRequiresAuth: true,
-    prefix: '/api/client',
-  })
-)
-
-app.listen(3000)
 ```
 
-**Features:**
+### Prefix array
 
-- ✅ Each `autoRouter` instance can have independent configuration
-- ✅ Route metadata automatically accumulates without overwriting
-- ✅ Duplicate routes across instances are detected and rejected
-- ✅ All route information is stored in `app.$routes`
-
-**Example Scenarios:**
+Register the same controllers under multiple prefixes — useful for API versioning or locale prefixes.
 
 ```typescript
-// Scenario 1: Multiple business modules (merged)
 app.extend(
-  autoRouter([
-    { dir: './controllers/user', prefix: '/api/user' },
-    { dir: './controllers/order', prefix: '/api/order' },
-    { dir: './controllers/product', prefix: '/api/product' },
-  ])
+  autoRouter({
+    dir: './controllers',
+    prefix: ['/api', '/v1', '/v2'],
+  })
 )
 
-// Scenario 2: Different permission levels (merged)
-app.extend(
-  autoRouter([
-    { dir: './controllers/public', defaultRequiresAuth: false, prefix: '/api/public' },
-    { dir: './controllers/protected', defaultRequiresAuth: true, prefix: '/api/protected' },
-  ])
-)
+// Each route file is registered 3 times:
+// get-users.ts → GET /api/users, GET /v1/users, GET /v2/users
+```
 
-// Scenario 3: API versioning (merged)
+### Merged configuration (array)
+
+Pass an array of config objects to `autoRouter()` to configure multiple directories in a single call. Each entry can have its own `dir`, `prefix`, `defaultRequiresAuth`, `forcePublic`, `forceProtected`, `strict`, `logging`, and `onLog`.
+
+```typescript
 app.extend(
   autoRouter([
-    { dir: './controllers/v1', prefix: '/api/v1' },
-    { dir: './controllers/v2', prefix: '/api/v2' },
+    {
+      dir: './controllers/admin',
+      prefix: '/api/admin',
+      defaultRequiresAuth: true,
+    },
+    {
+      dir: './controllers/public',
+      prefix: '/api/public',
+      defaultRequiresAuth: false,
+    },
+    {
+      dir: './controllers/v2',
+      prefix: ['/api/v2', '/v2'],
+    },
   ])
 )
 ```
+
+### Multiple calls
+
+Alternatively, call `autoRouter` multiple times. Routes accumulate in `app.$routes` and duplicate detection works across all calls via `app.$registeredRoutes`.
+
+```typescript
+app.extend(autoRouter({ dir: './controllers/admin', prefix: '/api/admin' }))
+app.extend(autoRouter({ dir: './controllers/client', prefix: '/api/client' }))
+```
+
+### No prefix
+
+Pass `''` (empty string) to register routes without a prefix:
+
+```typescript
+autoRouter({ dir: './controllers', prefix: '' })
+// get-users.ts → GET /users
+// get-[id].ts  → GET /:id
+```
+
+---
 
 ## Route Registry
 
-After loading, all route metadata is accessible via `app.$routes`:
+After loading, `app.$routes` contains all registered route metadata:
 
 ```typescript
-app.$routes.all             // RouteInfo[] — all registered routes
-app.$routes.publicRoutes    // { method, path }[] — public routes
-app.$routes.protectedRoutes // { method, path }[] — protected routes
+app.$routes.all             // RouteInfo[]   — every registered route
+app.$routes.publicRoutes    // { method, path }[]  — public routes
+app.$routes.protectedRoutes // { method, path }[]  — protected routes
 ```
 
-This is useful for integrating with JWT middleware or any permission-checking layer:
+This is designed for integrating with auth middleware:
 
 ```typescript
-// Example: manual JWT middleware using app.$routes
 app.use(async (ctx, next) => {
-  const match = app.$routes.protectedRoutes.find(
+  const isProtected = app.$routes.protectedRoutes.some(
     r => r.method === ctx.method && r.path === ctx.path
   )
-  if (match) {
-    // verify token ...
+  if (isProtected) {
+    // verify JWT token, session, etc.
   }
   await next()
 })
 ```
 
+---
+
 ## Type Safety
 
-`RouteHandler<TCtx, TRes>` supports both single-context and dual-parameter frameworks:
+`RouteHandler<TCtx, TRes>` is a conditional generic that adapts to your framework:
+
+### Single-context frameworks (Hoa, Koa, Fastify)
 
 ```typescript
 import { createHandler } from '@chaeco/auto-router'
 import type { RouteHandler } from '@chaeco/auto-router'
 
-// Single-context frameworks (Hoa, Koa, Fastify, etc.)
 type MyContext = { body: any; params: Record<string, string> }
 
 export default createHandler<MyContext>(
   async (ctx) => {
-    ctx.body = { success: true }
-  },
-  { requiresAuth: true }
-)
-
-// Dual-parameter frameworks (Express, etc.)
-import type { Request, Response } from 'express'
-
-export default createHandler<Request, Response>(
-  async (req, res) => {
-    res.json({ success: true })
+    ctx.body = { success: true }   // ctx is typed as MyContext
   },
   { requiresAuth: true }
 )
 ```
+
+### Dual-parameter frameworks (Express)
+
+```typescript
+import type { Request, Response } from 'express'
+
+export default createHandler<Request, Response>(
+  async (req, res) => {
+    res.json({ success: true })    // req: Request, res: Response
+  },
+  { requiresAuth: true }
+)
+```
+
+`RouteMeta` supports custom extensions:
+
+```typescript
+export default createHandler(
+  async (ctx) => { ... },
+  {
+    requiresAuth: true,
+    description: 'Get user profile',
+    rateLimit: 100,            // custom field
+    roles: ['admin', 'user'],  // custom field
+  }
+)
+```
+
+---
+
+## Logging
+
+### Default: all levels to console
+
+```typescript
+autoRouter({ dir: './controllers' })
+// info → console.log, warn → console.warn, error → console.error
+```
+
+### Custom log sink
+
+When `onLog` is provided, console output is fully replaced — your callback handles all log levels.
+
+```typescript
+autoRouter({
+  dir: './controllers',
+  onLog: (level, message) => {
+    myLogger[level](message)
+  },
+})
+```
+
+### Silent mode
+
+```typescript
+autoRouter({ dir: './controllers', logging: false })
+// No console output (info, warn, and error are all suppressed)
+```
+
+### Silent but capture errors
+
+```typescript
+autoRouter({
+  dir: './controllers',
+  logging: false,
+  onLog: (level, message) => {
+    if (level === 'error') errorTracker.capture(message)
+  },
+})
+```
+
+---
+
+## Validation Rules
+
+The auto-router validates every file during scanning and **skips** invalid files (logging an error) without aborting. The remaining files in the directory continue to be scanned.
+
+| Rule | Valid | Invalid |
+|------|-------|---------|
+| File name starts with HTTP method | `get-users.ts` | `users-get.ts` |
+| Bracket syntax for params | `[userId]` | `:userId` |
+| No empty brackets | `[id]` | `[]` |
+| Only default export | `export default async ...` | `export const foo = 1` + default |
+| Export is a function or `createHandler()` result | `async (ctx) => {}` | `export default 42` |
+| Directory names not HTTP methods | `controllers/users/` | `controllers/get/` ⚠️ |
+| No duplicate routes across instances | — | Two files mapping to `GET /api/users` |
+| `.d.ts` files ignored | — | `types.d.ts` is silently skipped |
+
+---
+
+## Best Practices
+
+### Do ✅
+
+- Use **nested directories** for resource hierarchies — `users/[userId]/posts/get.ts` instead of `get-users-[userId]-posts.ts`
+- Use **`[dirName]` dynamic directories** for parent resource params — keeps file names short
+- Use **`createHandler()`** when a route's auth differs from the global default
+- Use **`forceProtected`** for admin/sensitive areas — one pattern covers all routes
+- Use **`forcePublic`** for auth/login/docs areas — explicit and auditable
+- Choose **blacklist mode** (`defaultRequiresAuth: false`) for public-facing APIs
+- Choose **whitelist mode** (`defaultRequiresAuth: true`) for internal/admin APIs
+- Keep **handler logic thin** — delegate to service layers
+- Use **`strict: true`** (the default) — enforces consistent export style
+
+### Don't ❌
+
+- **Don't** flatten deep resource trees into long file names — 3+ hyphens → use directories
+- **Don't** put complex logic in route files — they're entry points, not business logic
+- **Don't** mix export styles in the same directory — pick one and use `strict: true`
+- **Don't** forget to update `forcePublic`/`forceProtected` patterns when restructuring controllers
+- **Don't** create controller files outside the configured `dir` — they won't be scanned
+
+---
+
+## Runtimes Without Filesystem Access
+
+The standard `autoRouter` relies on `fs` + dynamic `import()`, which are unavailable in edge runtimes (Cloudflare Workers, Deno Deploy, etc.) and bundled Node.js apps. Use `staticAutoRouter` for these environments — you statically import handlers yourself and declare routes as data.
+
+```typescript
+import { staticAutoRouter } from '@chaeco/auto-router'
+
+// Static imports — works in any bundler (esbuild, webpack, rolldown, etc.)
+import getUsers from './controllers/get-users'
+import getUserById from './controllers/get-[id]'
+import postLogin from './controllers/post-login'
+
+app.extend(
+  staticAutoRouter({
+    routes: [
+      { method: 'get',  path: '/api/users',  handler: getUsers },
+      { method: 'get',  path: '/api/:id',    handler: getUserById },
+      { method: 'post', path: '/api/login',  handler: postLogin },
+    ],
+    defaultRequiresAuth: false,
+    forcePublic: ['/api/login'],
+  })
+)
+```
+
+### Cloudflare Workers + Hono
+
+`staticAutoRouter` is the bridge: it handles route registration and auth metadata. The routing, middleware, and request dispatch belong to the framework — [Hono](https://hono.dev) is the standard choice for Workers.
+
+```typescript
+import { Hono } from 'hono'
+import { staticAutoRouter } from '@chaeco/auto-router'
+import getUsers from './controllers/get-users'
+import getUserById from './controllers/get-[id]'
+
+const app = new Hono()
+
+// staticAutoRouter registers routes on the Hono app just like any framework
+app.extend(
+  staticAutoRouter({
+    routes: [
+      { method: 'get', path: '/api/users', handler: getUsers },
+      { method: 'get', path: '/api/:id',   handler: getUserById },
+    ],
+  })
+)
+
+export default app
+```
+
+`staticAutoRouter` supports the same auth options as `autoRouter`: `defaultRequiresAuth`, `forcePublic`, `forceProtected`, `logging`, and `onLog`. Route validation (duplicate detection, auth resolution, registry population) works identically.
+
+---
 
 ## API Reference
 
 ### `autoRouter(options)`
 
-**Options**:
+Factory function. Returns an async plugin function `(app) => Promise<void>` for use with `app.extend()`.
+
+**Options:**
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `dir` | `string` | `'./controllers'` | Controllers directory path |
-| `prefix` | `string \| string[]` | `'/api'` | Route prefix; pass `''` for no prefix, or an array for multiple prefixes |
-| `defaultRequiresAuth` | `boolean` | `false` | Global auth default (`false` = public by default) |
-| `forcePublic` | `string[]` | — | Patterns whose matched routes are always public |
-| `forceProtected` | `string[]` | — | Patterns whose matched routes are always protected |
-| `strict` | `boolean` | `true` | `true`: only functions and `createHandler()` allowed; `false`: plain objects accepted with warning |
-| `logging` | `boolean` | `true` | `true`: print all levels to console; `false`: completely silent (all levels suppressed) |
-| `onLog` | `(level, message) => void` | — | Custom log sink; takes over entirely when provided (console is not called) |
+| `dir` | `string` | `'./controllers'` | Path to controller directory |
+| `prefix` | `string \| string[]` | `'/api'` | Route prefix; `''` for no prefix |
+| `defaultRequiresAuth` | `boolean` | `false` | Global auth default |
+| `forcePublic` | `string[]` | — | Patterns for always-public routes |
+| `forceProtected` | `string[]` | — | Patterns for always-protected routes |
+| `strict` | `boolean` | `true` | Strict export validation |
+| `logging` | `boolean` | `true` | Console log output |
+| `onLog` | `(level, message) => void` | — | Custom log sink |
 
-**`forcePublic` / `forceProtected` pattern rules:**
+`options` can also be an **array** of the above for merged multi-configuration.
 
-- `'/api/users'` — exact match, all HTTP methods
-- `'/users'` — prefix is optional; also matches `/api/users` when `prefix` is `/api`
-- `'/api/admin/*'` — wildcard: matches `/api/admin/foo` and deeper, but **NOT** `/api/admin` itself
-- `'POST /api/users'` — method-prefixed: only matches POST, GET is unaffected
-- `'DELETE /api/admin/*'` — method + wildcard combination
+### `staticAutoRouter(options)`
 
-**Priority:** `createHandler` explicit meta > `forceProtected` / `forcePublic` > `defaultRequiresAuth`  
-When both `forcePublic` and `forceProtected` match the same route, `forceProtected` wins.
+For runtimes without filesystem access. Accepts statically imported routes instead of scanning a directory.
 
-### `createHandler(handler, meta?)`
+**Options:**
 
-Wrapper function to attach metadata to a route handler.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `routes` | `StaticRoute[]` | **required** | Array of `{ method, path, handler }` |
+| `defaultRequiresAuth` | `boolean` | `false` | Global auth default |
+| `forcePublic` | `string[]` | — | Patterns for always-public routes |
+| `forceProtected` | `string[]` | — | Patterns for always-protected routes |
+| `logging` | `boolean` | `true` | Console log output |
+| `onLog` | `(level, message) => void` | — | Custom log sink |
 
-```typescript
-createHandler(handler: RouteHandler<TCtx, TRes>, meta?: RouteMeta): RouteConfig<TCtx, TRes>
-```
-
-**Parameters**:
-
-- `handler` (function, required) — The async route handler
-- `meta` (object, optional)
-  - `requiresAuth` (boolean) — Whether route requires authentication
-  - `description` (string) — Route description
-  - `[key: string]: any` — Any additional custom metadata
-
-**Notes:**
-
-- An empty `{}` meta is normalized to `undefined` internally
-- Returns an object marked with `$__isRouteConfig: true`; use `isRouteConfig(obj)` to check
-
-### `isRouteConfig(obj)`
-
-Returns `true` if `obj` was created by `createHandler()`. Use this to distinguish from plain objects.
-
-### Logging Examples
+**`StaticRoute`:**
 
 ```typescript
-// Default: all levels printed to console
-app.extend(autoRouter({ dir: './controllers' }))
-
-// Custom log sink — console output fully replaced
-app.extend(autoRouter({
-  dir: './controllers',
-  onLog: (level, message) => myLogger[level](message),
-}))
-
-// Completely silent (logging: false suppresses info + warn + error)
-app.extend(autoRouter({
-  dir: './controllers',
-  logging: false,
-}))
-
-// Silent but still capture errors via onLog
-app.extend(autoRouter({
-  dir: './controllers',
-  logging: false,
-  onLog: (level, message) => {
-    if (level === 'error') errorLogger.error(message)
-  },
-}))
-```
-
-## Validation Rules
-
-- ✅ Filenames must start with a valid HTTP method
-- ✅ Parameters must use bracket syntax: `[paramName]`
-- ✅ Empty parameters `[]` are not allowed
-- ✅ Only default exports allowed (no named exports)
-- ✅ Default export must be a function
-- ✅ Directory names should not contain HTTP method keywords
-- ✅ Duplicate routes are detected and skipped
-- ✅ Routes are logged with permission indicators (🔒 for protected routes)
-
-## Best Practices
-
-✅ **Do**:
-
-- Use `createHandler()` to explicitly mark permission requirements
-- Choose appropriate `defaultRequiresAuth` mode for your API
-- Use `@chaeco/hoa-jwt-permission` with `autoDiscovery: true`
-- Keep route metadata close to handlers
-- Use nested directories for logical grouping
-
-❌ **Don't**:
-
-- Export objects or other non-function types
-- Mix export styles unnecessarily
-- Use complex logic for route names
-- Create routes outside `controllers/` directory
-- Forget to update permission config when changing API behavior
-
-## Cloudflare Workers
-
-Cloudflare Workers don't support dynamic `import()` at runtime. `@chaeco/auto-router` solves this with a two-step approach: a build-time CLI scans your controller files and generates a static manifest, and `createWorkerRouter` provides a lightweight runtime dispatcher.
-
-### Step 1: Generate the manifest
-
-```bash
-npx tsx node_modules/@chaeco/auto-router/dist/build-worker-manifest.js ./controllers ./dist/worker-routes.ts
-```
-
-This writes `dist/worker-routes.ts` with static imports for every route file it finds. Add it to your build pipeline:
-
-```json
-{
-  "scripts": {
-    "build:manifest": "npx tsx node_modules/@chaeco/auto-router/dist/build-worker-manifest.js ./controllers ./dist/worker-routes.ts"
-  }
+interface StaticRoute {
+  method: string    // 'get', 'post', 'put', 'delete', 'patch'
+  path: string      // '/api/users', '/api/:id'
+  handler: any      // async function or createHandler() result
 }
 ```
 
-### Step 2: Use the manifest in your Worker
+### `createHandler(handler, meta?)`
 
 ```typescript
-import { createWorkerRouter } from '@chaeco/auto-router/worker-manifest'
-import { routes } from './worker-re... truncated ...
+createHandler<TCtx = any, TRes = void>(
+  handler: RouteHandler<TCtx, TRes>,
+  meta?: RouteMeta
+): RouteConfig<TCtx, TRes>
+```
+
+Wraps a handler function with metadata. An empty `{}` meta is normalized to `undefined`.
+
+**`RouteMeta` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `requiresAuth` | `boolean` | Whether auth is required |
+| `description` | `string` | Human-readable route description |
+| `[key: string]` | `any` | Any custom metadata |
+
+### `isRouteConfig(obj)`
+
+```typescript
+isRouteConfig(obj: any): obj is RouteConfig
+```
+
+Returns `true` if `obj` was created by `createHandler()`. Useful for type-narrowing.
+
+### Exported types
+
+```typescript
+export type { RouteHandler, RouteMeta, RouteConfig, RouteInfo, AppRoutesRegistry } from '@chaeco/auto-router'
+export type { StaticRoute, StaticAutoRouterOptions } from '@chaeco/auto-router'
+```
+
+---
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).

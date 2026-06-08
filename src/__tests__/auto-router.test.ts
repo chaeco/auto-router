@@ -1002,4 +1002,137 @@ describe('autoRouter', () => {
     logSpy.mockRestore()
     rmSync(defaultPrefixDir, { recursive: true, force: true })
   })
+
+  // ---------------------------------------------------------------------------
+  // Multi-parameter tests
+  // ---------------------------------------------------------------------------
+
+  it('should handle two consecutive dynamic params: [a]-[b] → :a/:b', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-multi-param-2dyn')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-[userId]-[postId].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/:userId/:postId', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should handle dynamic param followed by static: [a]-static → :a/static', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-multi-param-dyn-static')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-[userId]-posts.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/:userId/posts', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should handle static followed by dynamic: static-[a] → static/:a', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-multi-param-static-dyn')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users-[id].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users/:id', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should handle [a]-static-[b] → :a/static/:b', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-multi-param-dyn-static-dyn')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-[org]-profile-[section].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/:org/profile/:section', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should handle three consecutive dynamic params: [a]-[b]-[c] → :a/:b/:c', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-multi-param-3dyn')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-[a]-[b]-[c].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/:a/:b/:c', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should combine nested directories with multi-param file names', async () => {
+    const parentDir = join(process.cwd(), '__tests__', 'controllers-multi-param-nested')
+    const subDir = join(parentDir, 'users')
+    mkdirSync(subDir, { recursive: true })
+    writeFileSync(join(subDir, 'get-[id]-posts-[postId].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir: parentDir, prefix: '/api' })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users/:id/posts/:postId', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(parentDir, { recursive: true, force: true })
+  })
+
+  it('should handle multi-param with different HTTP methods', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-multi-param-methods')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'put-[org]-members-[userId].js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, 'delete-[org]-members-[userId].js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, 'patch-[org]-settings-[key].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = {
+      put: jest.fn(),
+      delete: jest.fn(),
+      patch: jest.fn(),
+      $routes: undefined,
+    }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(mockApp.put).toHaveBeenCalledWith('/api/:org/members/:userId', expect.any(Function))
+    expect(mockApp.delete).toHaveBeenCalledWith('/api/:org/members/:userId', expect.any(Function))
+    expect(mockApp.patch).toHaveBeenCalledWith('/api/:org/settings/:key', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(3)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
 })

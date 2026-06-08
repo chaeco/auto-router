@@ -1,4 +1,5 @@
-export default async function (ctx) {
+// GET /api/:id — single param
+export default async (ctx: any) => {
   const id = ctx.params?.id
-  ctx.res.body = { message: 'User details for ID: ' + id, user: { id, name: 'User ' + id } }
+  ctx.res.body = { user: { id, name: `User ${id}` } }
 }

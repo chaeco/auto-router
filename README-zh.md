@@ -1,583 +1,741 @@
 # @chaeco/auto-router
 
-Node.js 框架的文件式自动路由插件（支持 Hoa、Koa、Fastify、Express 等任意框架）。
+[![npm version](https://badge.fury.io/js/%40chaeco%2Fauto-router.svg)](https://badge.fury.io/js/%40chaeco%2Fauto-router)
+[![codecov](https://codecov.io/gh/chaeco/auto-router/branch/cf/graph/badge.svg)](https://codecov.io/gh/chaeco/auto-router)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
+
+基于文件系统的自动路由插件，适用于 Node.js 框架（Hoa、Koa、Fastify、Express 等）。文件即路由——无需手动注册。
 
 ## 特性
 
 - 🚀 基于文件结构的零配置自动路由
 - 📁 支持嵌套目录结构和自动路径构建
-- 🔒 内置权限元数据（`requiresAuth`）支持
-- 🔍 内置文件名和参数验证
+- ⚡ `[param]` 动态参数语法 — 单参数和多参数路由
+- 🔒 内置权限元数据（`requiresAuth`），支持精细的 `forcePublic` / `forceProtected` 覆盖
+- 🔍 内置文件名、参数和重复路由校验
 - 📝 完全 TypeScript 类型安全 — `RouteHandler<TCtx, TRes>` 泛型，无框架耦合
-- ⚡ 支持 `[param]` 语法动态参数
-- 🛡️ 跨所有 `autoRouter` 实例的重复路由检测
-- 🎯 支持异步处理器
-- 🌍 全局 `defaultRequiresAuth` 配置
-- 🎛️ `forcePublic` / `forceProtected` 批量权限覆盖，支持方法前缀规则语法
+- 🛡️ 跨实例重复路由检测（通过共享 `app.$registeredRoutes`）
+- 🎛️ Prefix 数组支持 — 同一控制器目录注册到多个前缀
+- 🧩 合并式多配置支持 — 一次调用配置多个目录
 - 📢 通过 `onLog` 回调自定义日志输出
-- ⛅ Cloudflare Workers 支持，通过静态清单（`createWorkerRouter` + 构建 CLI）实现
+- 🌐 `staticAutoRouter` 支持无文件系统的运行时（边缘函数、打包应用）
+
+---
 
 ## 安装
 
 ```bash
-npm install github:chaeco/auto-router#cf
-# 或
-yarn add github:chaeco/auto-router#cf
+npm install @chaeco/auto-router
 ```
 
-## 快速开始
+### AI 工具 Skills
 
-### 基本设置
+本包内含 Claude Code 和 OpenAI Codex 的 AI agent skill。安装后执行一次：
+
+```bash
+npx auto-router-init-skills
+```
+
+这会将 skill 文件复制到项目的 `.claude/skills/auto-router/` 和 `.codex/skills/auto-router/`。此后 AI 工具在创建路由时会自动遵守文件命名、导出方式、权限规则和最佳实践。
+
+---
+
+## 目录
+
+- [快速开始](#快速开始)
+- [文件命名规则](#文件命名规则)
+  - [基本格式](#基本格式)
+  - [单参数](#单参数)
+  - [多参数](#多参数)
+  - [动态目录名](#动态目录名)
+  - [扁平文件 vs 目录嵌套的选择](#扁平文件-vs-目录嵌套的选择)
+  - [路由转换规则（参考）](#路由转换规则参考)
+- [导出方式](#导出方式)
+  - [方式 1：纯函数](#方式-1纯函数)
+  - [方式 2：createHandler 包装](#方式-2createhandler-包装)
+  - [严格模式](#严格模式)
+- [权限与认证](#权限与认证)
+  - [配置模式](#配置模式)
+  - [forcePublic / forceProtected](#forcepublic--forceprotected)
+  - [规则格式](#规则格式)
+  - [优先级链](#优先级链)
+  - [冲突解决](#冲突解决)
+  - [未命中规则的警告](#未命中规则的警告)
+- [配置](#配置)
+  - [单配置](#单配置)
+  - [Prefix 数组](#prefix-数组)
+  - [合并式配置（数组）](#合并式配置数组)
+  - [多次调用](#多次调用)
+  - [无前缀](#无前缀)
+- [路由注册表](#路由注册表)
+- [类型安全](#类型安全)
+- [日志](#日志)
+- [验证规则](#验证规则)
+- [最佳实践](#最佳实践)
+- [无文件系统访问的运行时](#无文件系统访问的运行时)
+- [API 参考](#api-参考)
+  - [autoRouter(options)](#autorouteroptions)
+  - [staticAutoRouter(options)](#staticautorouteroptions)
+  - [createHandler(handler, meta?)](#createhandlerhandler-meta)
+  - [isRouteConfig(obj)](#isrouteconfigobj)
+  - [导出类型](#导出类型)
+- [许可证](#许可证)
+
+---
+
+## 快速开始
 
 ```typescript
 import { autoRouter } from '@chaeco/auto-router'
 
-// 适用于 Hoa、Koa、Fastify 等任何暴露 app[method](path, handler) 的框架
 const app = new YourFramework()
 
-// 推荐：严格模式（默认开启，只允许函数导出）
 app.extend(
   autoRouter({
     dir: './controllers',
     prefix: '/api',
-    defaultRequiresAuth: false, // 黑名单模式
-    strict: true, // 严格模式（默认值）
   })
 )
 
 app.listen(3000)
 ```
 
-### 严格模式
+给定以下文件结构：
 
-**严格模式（strict: true）- 推荐**：
+```
+controllers/
+  get-users.ts                                      → GET /api/users
+  get-[id].ts                                       → GET /api/:id
+  post-login.ts                                     → POST /api/login
+  get-[userId]-posts.ts                             → GET /api/:userId/posts
+  get-[userId]-[postId].ts                          → GET /api/:userId/:postId
+  users/
+    [userId]/
+      posts/
+        get.ts                                      → GET /api/users/:userId/posts
+        get-[id].ts                                 → GET /api/users/:userId/posts/:id
+      settings/
+        get.ts                                      → GET /api/users/:userId/settings
+  admin/
+    get-dashboard.ts                                → GET /api/admin/dashboard
+```
 
-- ✅ 只允许纯函数导出
-- ✅ 只允许 `createHandler()` 包装导出
-- ❌ 不允许普通对象导出 `{ handler, meta }`
-- 🎯 强制团队代码风格一致
+无需手动调用 `app.get(...)`。每个 `.ts` 文件即为一个路由。
 
-**非严格模式（strict: false）**：
-
-- ✅ 允许所有导出方式（普通对象也可接受，但会显示警告）
-- ⚠️ 对不推荐的导出风格打印警告
-- 💡 适用于向下兼容或渐进式迁移
+---
 
 ## 文件命名规则
 
+每个路由文件名编码了 **HTTP 方法**和 **URL 结构**。auto-router 解析文件名并将其转换为框架路由注册。
+
 ### 基本格式
 
-文件命名支持两种格式：
+| 文件名 | 注册为 |
+|--------|--------|
+| `get.ts` | `GET /api`（在根目录时，路由为目录路径） |
+| `post.ts` | `POST /api` |
+| `admin/get.ts` | `GET /api/admin` |
+| `users/post.ts` | `POST /api/users` |
+| `get-users.ts` | `GET /api/users` |
+| `post-login.ts` | `POST /api/login` |
 
-1. **仅 HTTP 方法名**：`get.ts`、`post.ts` 等 → 路由为当前目录路径
-2. **方法 + 路由名**：`get-users.ts`、`post-login.ts` 等
+**规则：** 文件名为 `{method}.ts` 时，以**目录路径**作为路由。文件名为 `{method}-{name}.ts` 时，将 `name` 追加到目录路径后。
 
-### 单参数示例
+### 单参数
 
-- `get.ts` → `GET /api`（位于根目录）
-- `admin/get.ts` → `GET /api/admin`
-- `post-login.ts` → `POST /api/login`
-- `get-users.ts` → `GET /api/users`
-- `get-[id].ts` → `GET /api/:id`
-- `delete-[id].ts` → `DELETE /api/:id`
+用方括号 `[]` 包裹参数名，会被转换为 Express 风格的 `:param` 路径段。
 
-### 多参数示例
+| 文件名 | 注册为 |
+|--------|--------|
+| `get-[id].ts` | `GET /api/:id` |
+| `delete-[id].ts` | `DELETE /api/:id` |
+| `get-[userId].ts` | `GET /api/:userId` |
+| `post-[type].ts` | `POST /api/:type` |
 
-- `get-[userId]-[postId].ts` → `GET /api/:userId/:postId`
-- `put-[userId]-profile.ts` → `PUT /api/:userId/profile`
-- `get-[id]-resources.ts` → `GET /api/:id/resources`
+### 多参数
 
-### 嵌套目录示例
+文件名中的多个 `[param]` 段用 `-` 分隔。每个 `-` 在两个段之间转换为 URL 中的 `/`。
 
-- `users/get.ts` → `GET /api/users`
-- `users/post.ts` → `POST /api/users`
-- `users/posts/get-[id].ts` → `GET /api/users/posts/:id`
+| 文件名 | 注册为 | 模式 |
+|--------|--------|------|
+| `get-[userId]-posts.ts` | `GET /api/:userId/posts` | 参数 + 静态 |
+| `get-users-[id].ts` | `GET /api/users/:id` | 静态 + 参数 |
+| `get-[userId]-[postId].ts` | `GET /api/:userId/:postId` | 参数 + 参数 |
+| `put-[userId]-profile.ts` | `PUT /api/:userId/profile` | 参数 + 静态 |
+| `get-[org]-settings-[key].ts` | `GET /api/:org/settings/:key` | 参数 + 静态 + 参数 |
+| `get-[a]-[b]-[c].ts` | `GET /api/:a/:b/:c` | 三个连续参数 |
 
-## 权限元数据
+### 动态目录名
 
-### 支持的两种导出方法
+目录名也可以包含 `[param]` 方括号。这是表达超过两层嵌套资源层级的推荐方式。
 
-#### 方法 1：纯函数（推荐大多数路由）
+| 文件路径 | 注册为 |
+|----------|--------|
+| `users/[userId]/get.ts` | `GET /api/users/:userId` |
+| `users/[userId]/posts/get.ts` | `GET /api/users/:userId/posts` |
+| `users/[userId]/posts/[postId]/get.ts` | `GET /api/users/:userId/posts/:postId` |
+| `users/[userId]/posts/get-[id].ts` | `GET /api/users/:userId/posts/:id` |
+
+动态目录和文件级参数可以自然组合——递归扫描时先处理目录参数，再处理文件名参数。
+
+### 扁平文件 vs 目录嵌套的选择
+
+`GET /api/users/:userId/posts/:postId/comments/:commentId` 可以用两种方式表达：
+
+| 方式 | 文件路径 | 评价 |
+|------|----------|------|
+| 扁平文件 | `get-users-[userId]-posts-[postId]-comments-[commentId].ts` | ❌ 60+ 字符，不可读 |
+| 目录嵌套 | `users/[userId]/posts/[postId]/comments/get-[commentId].ts` | ✅ 每段短小清晰 |
+
+**经验法则：**
+
+- **≤ 3 个路径段**（方法 + 2 个连字符）：扁平文件即可 —— `get-[userId]-posts.ts`
+- **> 3 个路径段**：使用目录嵌套 —— `users/[userId]/posts/get-[id].ts`
+- **资源层级**天然映射到目录树 —— `users/`、`posts/`、`comments/` 是目录树，不是文件名前缀
+
+### 路由转换规则（参考）
+
+文件名中的 `routeName`（`method-` 之后的部分）经过三步正则转换：
+
+```
+1. [param]       → :param        （方括号 → 冒号前缀）
+2. -:/           → /:            （连字符后跟冒号 → 斜杠后跟冒号）
+3. :param-/      → :param/       （冒号段后跟连字符 → 冒号段后跟斜杠）
+```
+
+**重要：** `-` 字符始终被解析为路径分隔符。无法通过文件命名在路由路径中表达字面量 `-`。如果路由必须包含字面量 `-`（如 `/api/user-settings`），请使用目录结构或手动配置路由。
+
+---
+
+## 导出方式
+
+### 方式 1：纯函数
+
+最简单的形式。路由继承全局 `defaultRequiresAuth` 设置。
 
 ```typescript
 // controllers/get-users.ts
-export default async ctx => {
+export default async (ctx) => {
   ctx.res.body = { users: [] }
 }
-// 使用全局 defaultRequiresAuth 配置
 ```
 
-#### 方法 2：createHandler 包装（需要权限元数据时）
+### 方式 2：createHandler 包装
+
+需要为单个路由设置元数据时使用（权限、描述、自定义字段）。
 
 ```typescript
 import { createHandler } from '@chaeco/auto-router'
 
-// controllers/users/get-info.ts - 受保护的接口
+// 受保护的路由
 export default createHandler(
-  async ctx => {
+  async (ctx) => {
     ctx.res.body = { success: true, data: { userId: ctx.currentUser?.id } }
   },
-  { requiresAuth: true, description: '获取用户信息' }
+  { requiresAuth: true, description: '获取当前用户信息' }
 )
 
-// controllers/auth/post-login.ts - 公开接口
+// 公开路由（覆盖全局 defaultRequiresAuth: true）
 export default createHandler(
-  async ctx => {
+  async (ctx) => {
     ctx.res.body = { success: true }
   },
   { requiresAuth: false }
 )
 ```
 
-### 配置模式
+`meta` 对象接受 `requiresAuth`、`description` 及任意 `[key: string]: any` 自定义字段。
 
-**黑名单模式（推荐用于公开 API）**：
+### 严格模式
+
+| 设置 | 纯函数 | `createHandler()` | 普通 `{ handler, meta }` |
+|------|:---:|:---:|:---:|
+| `strict: true`（默认） | ✅ | ✅ | ❌ 拒绝 |
+| `strict: false` | ✅ | ✅ | ⚠️ 接受但警告 |
+
+**严格模式默认开启。** 它强制代码库中导出风格的一致性。仅在渐进式迁移或向下兼容时使用非严格模式。
 
 ```typescript
-autoRouter({
-  defaultRequiresAuth: false,  // 默认公开
-})
-// 只需要在需要保护的路由上标记
+// 严格模式（默认）—— 拒绝普通对象
+autoRouter({ dir: './controllers', strict: true })
+
+// 非严格模式 —— 接受普通对象但显示警告
+autoRouter({ dir: './controllers', strict: false })
+```
+
+---
+
+## 权限与认证
+
+### 配置模式
+
+**黑名单模式**（默认公开）：只标记需要保护的路由。
+
+```typescript
+autoRouter({ dir: './controllers', defaultRequiresAuth: false })
+```
+
+```typescript
+// 只有这个路由需要显式标记
 export default createHandler(async (ctx) => { ... }, { requiresAuth: true })
 ```
 
-**白名单模式（推荐用于内部 API）**：
+**白名单模式**（默认保护）：只标记需要公开的路由。
 
 ```typescript
-autoRouter({
-  defaultRequiresAuth: true,  // 默认受保护
-})
-// 只需要在需要公开的路由上标记
+autoRouter({ dir: './controllers', defaultRequiresAuth: true })
+```
+
+```typescript
+// 只有这个路由需要显式标记为公开
 export default createHandler(async (ctx) => { ... }, { requiresAuth: false })
 ```
 
-## 强制覆盖路由权限
+### forcePublic / forceProtected
 
-`forcePublic` 和 `forceProtected` 选项允许您显式指定哪些路由始终公开、哪些始终受保护，不依赖 `defaultRequiresAuth` 的当前值。
-
-> **优先级：** `createHandler` 显式 meta → `forceProtected` / `forcePublic` → `defaultRequiresAuth`  
-> 当同一路由同时匹配 `forcePublic` 和 `forceProtected` 时，`forceProtected` 优先（更安全）。
-
-### 强制公开（`forcePublic`）
-
-登录、注册、公开文档等路由始终公开，不受全局 `defaultRequiresAuth: true` 影响：
+批量权限覆盖，一次性对大量路由生效，**不依赖 `defaultRequiresAuth` 的值**。
 
 ```typescript
 autoRouter({
   dir: './controllers',
   prefix: '/api',
-  defaultRequiresAuth: true,   // 全局默认受保护
+  defaultRequiresAuth: true,         // 全局默认受保护
   forcePublic: [
-    '/api/auth/login',    // 带 prefix：精确匹配（所有方法）
-    '/auth/register',     // 不带 prefix：运行效果相同，匹配 /api/auth/register
-    '/api/public/*',      // 通配符：只匹配子路径（/api/public/docs ✅，/api/public 本身 ❌）
+    '/api/auth/login',               // 登录始终公开
+    '/api/auth/register',            // 注册始终公开
+    '/api/public/*',                 // /api/public/ 下的所有路由公开
   ],
-})
-// POST /api/auth/login    → requiresAuth: false（强制公开）
-// POST /api/auth/register → requiresAuth: false（强制公开）
-// GET  /api/public/docs   → requiresAuth: false（强制公开）
-// GET  /api/public        → requiresAuth: true （/* 不匹配基路径本身）
-// GET  /api/users         → requiresAuth: true （默认）
-```
-
-### 强制保护（`forceProtected`）
-
-管理后台、敏感接口等路由始终受保护，不受全局 `defaultRequiresAuth: false` 影响：
-
-```typescript
-autoRouter({
-  dir: './controllers',
-  prefix: '/api',
-  defaultRequiresAuth: false,  // 全局默认公开
   forceProtected: [
-    '/api/admin/*',   // 通配符：/api/admin/users ✅，/api/admin 本身 ❌
-    '/api/user/me',  // 精确匹配（所有方法）
+    '/api/admin/*',                  // /api/admin/ 下的所有路由受保护
+    'POST /api/users',               // 只有 POST /api/users 受保护；GET 仍公开
   ],
 })
-// GET  /api/admin/users → requiresAuth: true （强制保护）
-// GET  /api/user/me    → requiresAuth: true （强制保护）
-// GET  /api/products   → requiresAuth: false（默认）
 ```
 
-### 组合使用
+### 规则格式
 
-`forcePublic` 和 `forceProtected` 可以同时使用，各自独立强制相应路由的权限状态：
+| 格式 | 示例 | 匹配范围 |
+|------|------|----------|
+| 精确路径（带 prefix） | `'/api/users'` | `/api/users` 上的所有方法 |
+| 精确路径（不带 prefix） | `'/users'` | 当 prefix 为 `/api` 时同上 |
+| 通配符 | `'/api/admin/*'` | `/api/admin/foo`、`/api/admin/foo/bar` 等所有方法 — **不匹配** `/api/admin` 本身 |
+| 方法 + 精确路径 | `'POST /api/users'` | 仅 POST `/api/users`；GET 不受影响 |
+| 方法 + 通配符 | `'DELETE /api/admin/*'` | 仅 `/api/admin/` 下的 DELETE |
+
+**通配符注意：** `/*` 有意只匹配子路径，不匹配基路径。如需同时覆盖基路径，额外添加精确匹配：
 
 ```typescript
-autoRouter({
-  dir: './controllers',
-  prefix: '/api',
-  defaultRequiresAuth: false,
-  forcePublic: ['/api/auth/*'],    // 认证相关接口公开
-  forceProtected: ['/api/admin/*'], // 管理接口受保护
-})
+forceProtected: [
+  '/api/admin',       // 覆盖 /api/admin 本身
+  '/api/admin/*',     // 覆盖 /api/admin/users、/api/admin/settings 等
+]
 ```
 
-## Prefix 数组支持
+### 优先级链
 
-`prefix` 参数支持字符串数组，让同一个控制器目录同时注册到多个前缀：
+```
+createHandler 显式 meta  >  forceProtected / forcePublic  >  defaultRequiresAuth
+```
+
+1. **显式 meta 最优先。** 如果路由使用 `createHandler(fn, { requiresAuth: true })`，任何 `forcePublic` 规则都无法覆盖它。
+2. **force 规则覆盖全局默认。** `forceProtected` 规则可在 `defaultRequiresAuth: false` 时将路由提升为受保护。
+3. **默认值作为兜底。** 无显式 meta 且无 force 规则命中时，使用 `defaultRequiresAuth`。
+
+### 冲突解决
+
+同一路由同时匹配 `forcePublic` 和 `forceProtected` 时：
+
+- `forceProtected` 优先（更安全）
+- 输出警告日志标识冲突
+
+当 `forcePublic` 或 `forceProtected` 规则命中了一个有**显式 `createHandler` meta** 的路由时：
+
+- 显式 meta 优先
+- 输出警告：该 force 规则"无效（has no effect）"
+
+### 未命中规则的警告
+
+所有路由加载完成后，auto-router 检查每条 `forcePublic` / `forceProtected` 规则是否至少命中了一个已注册路由。未命中的规则会输出警告——用于检测拼写错误和过期配置：
+
+```
+⚠️  forcePublic 规则 "/api/nonexistent-route" 未命中任何已注册路由
+   （请检查是否有拼写错误或配置已过期）
+```
+
+---
+
+## 配置
+
+### 单配置
 
 ```typescript
-import { autoRouter } from '@chaeco/auto-router'
-
-// 适用于任何暴露 app[method](path, handler) 的框架
-const app = new YourFramework()
-
-// 同一个目录注册到多个前缀
 app.extend(
   autoRouter({
     dir: './controllers',
-    prefix: ['/api', '/v1', '/v2'],  // 支持数组
-  })
-)
-
-// 这样 get-users.ts 会同时注册为：
-// GET /api/users
-// GET /v1/users
-// GET /v2/users
-
-app.listen(3000)
-```
-
-**使用场景：**
-
-```typescript
-// 场景 1：API 版本兼容
-app.extend(
-  autoRouter({
-    dir: './controllers/v2',
-    prefix: ['/api', '/v2'],  // 同时支持新旧两个前缀
-  })
-)
-
-// 场景 2：多语言支持
-app.extend(
-  autoRouter({
-    dir: './controllers',
-    prefix: ['/api', '/zh', '/en'],
-  })
-)
-```
-
-## 多层级设置
-
-`auto-router` 支持两种方式配置多个路由目录：
-
-### 方式 1：合并式配置（推荐）
-
-使用数组一次性配置多个路由目录：
-
-```typescript
-import { autoRouter } from '@chaeco/auto-router'
-
-const app = new YourFramework()
-
-// 合并式配置 - 一次配置多个目录
-app.extend(
-  autoRouter([
-    {
-      dir: './src/controllers/admin',
-      defaultRequiresAuth: false,
-      prefix: '/api/admin',
-    },
-    {
-      dir: './src/controllers/client',
-      defaultRequiresAuth: true,
-      prefix: '/api/client',
-    },
-  ])
-)
-
-// 即使只有一个配置，也可以使用数组形式（保持一致性）
-app.extend(
-  autoRouter([
-    {
-      dir: './controllers',
-      prefix: '/api',
-    },
-  ])
-)
-
-app.listen(3000)
-```
-
-### 方式 2：多次调用
-
-分别调用多个 `autoRouter` 实例：
-
-```typescript
-import { autoRouter } from '@chaeco/auto-router'
-
-const app = new YourFramework()
-
-// 管理端路由
-app.extend(
-  autoRouter({
-    dir: './src/controllers/admin',
+    prefix: '/api',
     defaultRequiresAuth: false,
-    prefix: '/api/admin',
   })
 )
-
-// 客户端路由
-app.extend(
-  autoRouter({
-    dir: './src/controllers/client',
-    defaultRequiresAuth: true,
-    prefix: '/api/client',
-  })
-)
-
-app.listen(3000)
 ```
 
-**特性：**
+### Prefix 数组
 
-- ✅ 每个 `autoRouter` 实例可以有独立的配置
-- ✅ 路由元数据会自动累积，不会相互覆盖
-- ✅ 跨实例的重复路由会被检测并拒绝
-- ✅ 所有路由信息都存储在 `app.$routes` 中
-
-**示例场景：**
+将同一控制器目录注册到多个前缀——适用于 API 版本管理或语言前缀。
 
 ```typescript
-// 场景 1: 多个业务模块（合并式）
 app.extend(
-  autoRouter([
-    { dir: './controllers/user', prefix: '/api/user' },
-    { dir: './controllers/order', prefix: '/api/order' },
-    { dir: './controllers/product', prefix: '/api/product' },
-  ])
+  autoRouter({
+    dir: './controllers',
+    prefix: ['/api', '/v1', '/v2'],
+  })
 )
 
-// 场景 2: 不同权限级别（合并式）
-app.extend(
-  autoRouter([
-    { dir: './controllers/public', defaultRequiresAuth: false, prefix: '/api/public' },
-    { dir: './controllers/protected', defaultRequiresAuth: true, prefix: '/api/protected' },
-  ])
-)
+// 每个路由文件被注册 3 次：
+// get-users.ts → GET /api/users、GET /v1/users、GET /v2/users
+```
 
-// 场景 3: API 版本管理（合并式）
+### 合并式配置（数组）
+
+向 `autoRouter()` 传入配置数组，在单次调用中配置多个目录。每项可有独立的 `dir`、`prefix`、`defaultRequiresAuth`、`forcePublic`、`forceProtected`、`strict`、`logging` 和 `onLog`。
+
+```typescript
 app.extend(
   autoRouter([
-    { dir: './controllers/v1', prefix: '/api/v1' },
-    { dir: './controllers/v2', prefix: '/api/v2' },
+    {
+      dir: './controllers/admin',
+      prefix: '/api/admin',
+      defaultRequiresAuth: true,
+    },
+    {
+      dir: './controllers/public',
+      prefix: '/api/public',
+      defaultRequiresAuth: false,
+    },
+    {
+      dir: './controllers/v2',
+      prefix: ['/api/v2', '/v2'],
+    },
   ])
 )
 ```
+
+### 多次调用
+
+也可以多次调用 `autoRouter`。路由累积在 `app.$routes` 中，重复检测通过 `app.$registeredRoutes` 跨所有调用生效。
+
+```typescript
+app.extend(autoRouter({ dir: './controllers/admin', prefix: '/api/admin' }))
+app.extend(autoRouter({ dir: './controllers/client', prefix: '/api/client' }))
+```
+
+### 无前缀
+
+传入 `''`（空字符串）以注册不带前缀的路由：
+
+```typescript
+autoRouter({ dir: './controllers', prefix: '' })
+// get-users.ts → GET /users
+// get-[id].ts  → GET /:id
+```
+
+---
 
 ## 路由注册表
 
-加载完成后，所有路由元数据可从 `app.$routes` 访问：
+加载完成后，`app.$routes` 包含所有已注册路由的元数据：
 
 ```typescript
-app.$routes.all             // RouteInfo[] — 所有已注册路由
-app.$routes.publicRoutes    // { method, path }[] — 公开路由
-app.$routes.protectedRoutes // { method, path }[] — 受保护路由
+app.$routes.all             // RouteInfo[]   — 所有已注册路由
+app.$routes.publicRoutes    // { method, path }[]  — 公开路由
+app.$routes.protectedRoutes // { method, path }[]  — 受保护路由
 ```
 
-可用于与 JWT 中间件或任意权限核查层集成：
+用于与认证中间件集成：
 
 ```typescript
 app.use(async (ctx, next) => {
-  const match = app.$routes.protectedRoutes.find(
+  const isProtected = app.$routes.protectedRoutes.some(
     r => r.method === ctx.method && r.path === ctx.path
   )
-  if (match) {
-    // 验证 token ...
+  if (isProtected) {
+    // 验证 JWT token、session 等
   }
   await next()
 })
 ```
 
+---
+
 ## 类型安全
 
-`RouteHandler<TCtx, TRes>` 同时支持单 context 框架和双参数框架：
+`RouteHandler<TCtx, TRes>` 是条件泛型，适配不同框架：
+
+### 单 context 框架（Hoa、Koa、Fastify）
 
 ```typescript
 import { createHandler } from '@chaeco/auto-router'
 import type { RouteHandler } from '@chaeco/auto-router'
 
-// 单 context 框架（Hoa、Koa、Fastify 等）
 type MyContext = { body: any; params: Record<string, string> }
 
 export default createHandler<MyContext>(
   async (ctx) => {
-    ctx.body = { success: true }
-  },
-  { requiresAuth: true }
-)
-
-// 双参数框架（Express 等）
-import type { Request, Response } from 'express'
-
-export default createHandler<Request, Response>(
-  async (req, res) => {
-    res.json({ success: true })
+    ctx.body = { success: true }   // ctx 类型为 MyContext
   },
   { requiresAuth: true }
 )
 ```
+
+### 双参数框架（Express）
+
+```typescript
+import type { Request, Response } from 'express'
+
+export default createHandler<Request, Response>(
+  async (req, res) => {
+    res.json({ success: true })    // req: Request, res: Response
+  },
+  { requiresAuth: true }
+)
+```
+
+`RouteMeta` 支持自定义扩展：
+
+```typescript
+export default createHandler(
+  async (ctx) => { ... },
+  {
+    requiresAuth: true,
+    description: '获取用户信息',
+    rateLimit: 100,            // 自定义字段
+    roles: ['admin', 'user'],  // 自定义字段
+  }
+)
+```
+
+---
+
+## 日志
+
+### 默认：所有级别输出到控制台
+
+```typescript
+autoRouter({ dir: './controllers' })
+// info → console.log、warn → console.warn、error → console.error
+```
+
+### 自定义日志接收器
+
+设置 `onLog` 后，控制台输出被完全替代——回调函数处理所有日志级别。
+
+```typescript
+autoRouter({
+  dir: './controllers',
+  onLog: (level, message) => {
+    myLogger[level](message)
+  },
+})
+```
+
+### 静默模式
+
+```typescript
+autoRouter({ dir: './controllers', logging: false })
+// 无控制台输出（info、warn 和 error 全部抑制）
+```
+
+### 静默但捕获错误
+
+```typescript
+autoRouter({
+  dir: './controllers',
+  logging: false,
+  onLog: (level, message) => {
+    if (level === 'error') errorTracker.capture(message)
+  },
+})
+```
+
+---
+
+## 验证规则
+
+auto-router 在扫描时校验每个文件，**跳过**无效文件（记录错误）而不中止。目录中的其余文件继续被扫描。
+
+| 规则 | 有效示例 | 无效示例 |
+|------|----------|----------|
+| 文件名以 HTTP 方法开头 | `get-users.ts` | `users-get.ts` |
+| 参数使用方括号语法 | `[userId]` | `:userId` |
+| 不允许空括号 | `[id]` | `[]` |
+| 只允许默认导出 | `export default async ...` | `export const foo = 1` + default |
+| 导出必须是函数或 `createHandler()` 结果 | `async (ctx) => {}` | `export default 42` |
+| 目录名不能是 HTTP 方法 | `controllers/users/` | `controllers/get/` ⚠️ |
+| 跨实例无重复路由 | — | 两个文件映射到 `GET /api/users` |
+| `.d.ts` 文件被忽略 | — | `types.d.ts` 静默跳过 |
+
+---
+
+## 最佳实践
+
+### 推荐做法 ✅
+
+- **使用目录嵌套**表达资源层级 — `users/[userId]/posts/get.ts` 优于 `get-users-[userId]-posts.ts`
+- **使用 `[dirName]` 动态目录**处理父资源参数 — 保持文件名短小
+- 路由权限与全局默认不同时，**使用 `createHandler()`** 显式标注
+- 管理后台/敏感区域**使用 `forceProtected`** — 一条规则覆盖全部路由
+- 认证/登录/文档区域**使用 `forcePublic`** — 显式声明、可审计
+- 公开 API 选择**黑名单模式**（`defaultRequiresAuth: false`）
+- 内部/管理 API 选择**白名单模式**（`defaultRequiresAuth: true`）
+- **保持 handler 精简** — 委托给 service 层
+- 使用 **`strict: true`**（默认值）— 强制一致的导出风格
+
+### 不推荐做法 ❌
+
+- **不要**将深层资源树压扁为长文件名 — 3 个以上连字符 → 改用目录
+- **不要**在路由文件中放复杂业务逻辑 — 它们是入口，不是业务层
+- **不要**在同一目录混用导出风格 — 选择一种并用 `strict: true` 强制执行
+- **不要**重构控制器目录后忘记更新 `forcePublic`/`forceProtected` 规则
+- **不要**在配置的 `dir` 之外创建控制器文件 — 它们不会被扫描
+
+---
+
+## 无文件系统访问的运行时
+
+标准 `autoRouter` 依赖 `fs` + 动态 `import()`，这在边缘运行时（Cloudflare Workers、Deno Deploy 等）和打包后的 Node.js 应用中不可用。在这些场景使用 `staticAutoRouter`——手动静态导入 handler，以数据形式声明路由。
+
+```typescript
+import { staticAutoRouter } from '@chaeco/auto-router'
+
+// 静态导入 — 适用于任意打包工具（esbuild、webpack、rolldown 等）
+import getUsers from './controllers/get-users'
+import getUserById from './controllers/get-[id]'
+import postLogin from './controllers/post-login'
+
+app.extend(
+  staticAutoRouter({
+    routes: [
+      { method: 'get',  path: '/api/users',  handler: getUsers },
+      { method: 'get',  path: '/api/:id',    handler: getUserById },
+      { method: 'post', path: '/api/login',  handler: postLogin },
+    ],
+    defaultRequiresAuth: false,
+    forcePublic: ['/api/login'],
+  })
+)
+```
+
+### Cloudflare Workers + Hono
+
+`staticAutoRouter` 是桥梁：它负责路由注册和权限元数据。路由分发、中间件、请求处理交给框架——[Hono](https://hono.dev) 是 Workers 的标准选择。
+
+```typescript
+import { Hono } from 'hono'
+import { staticAutoRouter } from '@chaeco/auto-router'
+import getUsers from './controllers/get-users'
+import getUserById from './controllers/get-[id]'
+
+const app = new Hono()
+
+// staticAutoRouter 像其他框架一样在 Hono app 上注册路由
+app.extend(
+  staticAutoRouter({
+    routes: [
+      { method: 'get', path: '/api/users', handler: getUsers },
+      { method: 'get', path: '/api/:id',   handler: getUserById },
+    ],
+  })
+)
+
+export default app
+```
+
+`staticAutoRouter` 支持与 `autoRouter` 相同的权限选项：`defaultRequiresAuth`、`forcePublic`、`forceProtected`、`logging` 和 `onLog`。路由校验（重复检测、权限解析、注册表填充）完全一致。
+
+---
 
 ## API 参考
 
 ### `autoRouter(options)`
 
+工厂函数。返回异步插件函数 `(app) => Promise<void>`，用于 `app.extend()`。
+
 **选项：**
 
 | 选项 | 类型 | 默认值 | 说明 |
-|------|------|---------|------|
+|------|------|--------|------|
 | `dir` | `string` | `'./controllers'` | 控制器目录路径 |
-| `prefix` | `string \| string[]` | `'/api'` | 路由前缀；传 `''` 表示无前缀，支持数组 |
-| `defaultRequiresAuth` | `boolean` | `false` | 全局默认权限（`false` 表示默认公开） |
-| `forcePublic` | `string[]` | — | 匹配的路由始终公开 |
-| `forceProtected` | `string[]` | — | 匹配的路由始终受保护 |
-| `strict` | `boolean` | `true` | `true`：只允许函数和 `createHandler()`；`false`：允许普通对象并显示警告 |
-| `logging` | `boolean` | `true` | `true`：所有日志级别输出到控制台；`false`：完全静默（info / warn / error 全部抹除） |
-| `onLog` | `(level, message) => void` | — | 自定义日志接收器；设置后完全接管日志，不再输出到控制台 |
+| `prefix` | `string \| string[]` | `'/api'` | 路由前缀；传 `''` 表示无前缀 |
+| `defaultRequiresAuth` | `boolean` | `false` | 全局默认权限 |
+| `forcePublic` | `string[]` | — | 始终公开的路由规则 |
+| `forceProtected` | `string[]` | — | 始终受保护的路由规则 |
+| `strict` | `boolean` | `true` | 严格导出校验 |
+| `logging` | `boolean` | `true` | 控制台日志输出 |
+| `onLog` | `(level, message) => void` | — | 自定义日志接收器 |
 
-**`forcePublic` / `forceProtected` 规则格式：**
+`options` 也可以是上述配置的**数组**，用于合并式多配置。
 
-- `'/api/users'` — 精确匹配，匹配所有 HTTP 方法
-- `'/users'` — prefix 可选；当 `prefix` 为 `/api` 时同样匹配 `/api/users`
-- `'/api/admin/*'` — 通配符：匹配 `/api/admin/foo` 及更深子路径，**不匹配** `/api/admin` 本身
-- `'POST /api/users'` — 方法前缀：只匹配 POST，GET 不受影响
-- `'DELETE /api/admin/*'` — 方法 + 通配符组合
+### `staticAutoRouter(options)`
 
-**优先级：** `createHandler` 显式 meta > `forceProtected` / `forcePublic` > `defaultRequiresAuth`  
-同一路由同时匹配 `forcePublic` 和 `forceProtected` 时，`forceProtected` 优先。
+适用于无文件系统访问权限的运行时。接收静态导入的路由，而非扫描目录。
 
-### `createHandler(handler, meta?)`
+**选项：**
 
-包装函数，为路由处理器附加元数据。
+| 选项 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `routes` | `StaticRoute[]` | **必填** | `{ method, path, handler }` 数组 |
+| `defaultRequiresAuth` | `boolean` | `false` | 全局默认权限 |
+| `forcePublic` | `string[]` | — | 始终公开的路由规则 |
+| `forceProtected` | `string[]` | — | 始终受保护的路由规则 |
+| `logging` | `boolean` | `true` | 控制台日志输出 |
+| `onLog` | `(level, message) => void` | — | 自定义日志接收器 |
 
-```typescript
-createHandler(handler: RouteHandler<TCtx, TRes>, meta?: RouteMeta): RouteConfig<TCtx, TRes>
-```
-
-**参数：**
-
-- `handler`（函数，必填）— 异步路由处理器
-- `meta`（对象，可选）
-  - `requiresAuth` (boolean) — 路由是否需要认证
-  - `description` (string) — 路由描述
-  - `[key: string]: any` — 任意自定义元数据
-
-**注意：**
-
-- 空对象 `{}` 会被内部归一化为 `undefined`
-- 返回的对象含有 `$__isRouteConfig: true` 标记，可用 `isRouteConfig(obj)` 检测
-
-### `isRouteConfig(obj)`
-
-若 `obj` 是由 `createHandler()` 创建的则返回 `true`。用于区分普通对象。
-
-### 日志示例
+**`StaticRoute`：**
 
 ```typescript
-// 默认：所有级别输出到控制台
-app.extend(autoRouter({ dir: './controllers' }))
-
-// 自定义日志接收器 — 完全替代控制台输出
-app.extend(autoRouter({
-  dir: './controllers',
-  onLog: (level, message) => myLogger[level](message),
-}))
-
-// 完全静默（logging: false 抹除 info + warn + error 所有级别）
-app.extend(autoRouter({
-  dir: './controllers',
-  logging: false,
-}))
-
-// 静默但仍能通过 onLog 捕获错误
-app.extend(autoRouter({
-  dir: './controllers',
-  logging: false,
-  onLog: (level, message) => {
-    if (level === 'error') errorLogger.error(message)
-  },
-}))
-```
-
-## 验证规则
-
-- ✅ 文件名必须以有效的 HTTP 方法开头
-- ✅ 参数必须使用方括号语法：`[paramName]`
-- ✅ 空参数 `[]` 不允许
-- ✅ 只允许默认导出（不允许命名导出）
-- ✅ 默认导出必须是函数
-- ✅ 目录名不应包含 HTTP 方法关键字
-- ✅ 检测重复路由
-- ✅ 路由会显示权限指示符（🔒 表示受保护路由）
-
-## 最佳实践
-
-✅ **推荐做法**：
-
-- 使用 `createHandler()` 显式标注权限要求
-- 根据 API 性质选择合适的 `defaultRequiresAuth` 默认值
-- 结合 `@chaeco/hoa-jwt-permission` 的 `autoDiscovery: true` 使用
-- 将路由元数据保留在处理函数附近
-- 用嵌套目录进行逻辑分组
-
-❌ **不推荐做法**：
-
-- 导出对象或其他非函数类型
-- 不必要地混用导出风格
-- 在路由文件名中使用复杂逻辑
-- 在 `controllers/` 目录之外创建路由
-- 修改 API 权限行为后忘记同步更新权限配置
-
-## Cloudflare Workers
-
-Cloudflare Workers 不支持运行时动态 `import()`。`@chaeco/auto-router` 通过两步方案解决：构建阶段 CLI 扫描控制器文件生成静态清单，运行时由 `createWorkerRouter` 轻量分发。
-
-### 第一步：生成清单
-
-```bash
-npx tsx node_modules/@chaeco/auto-router/dist/build-worker-manifest.js ./controllers ./dist/worker-routes.ts
-```
-
-此命令将扫描到的所有路由文件生成静态 import，写入 `dist/worker-routes.ts`。可加入构建流程：
-
-```json
-{
-  "scripts": {
-    "build:manifest": "npx tsx node_modules/@chaeco/auto-router/dist/build-worker-manifest.js ./controllers ./dist/worker-routes.ts"
-  }
+interface StaticRoute {
+  method: string    // 'get'、'post'、'put'、'delete'、'patch'
+  path: string      // '/api/users'、'/api/:id'
+  handler: any      // async function 或 createHandler() 结果
 }
 ```
 
-### 第二步：在 Worker 中使用清单
+### `createHandler(handler, meta?)`
 
 ```typescript
-import { createWorkerRouter } from '@chaeco/auto-router/worker-manifest'
-import { routes } from './worker-routes' // 第一步生成
-
-const router = createWorkerRouter({
-  routes,
-  notFound: (ctx) => {
-    ctx.res.status = 404
-    ctx.res.body = { error: 'Not Found' }
-  },
-  onError: (err) => new Response('Internal Server Error', { status: 500 }),
-})
-
-export default router // { fetch: (req, env, ctx) => Response }
+createHandler<TCtx = any, TRes = void>(
+  handler: RouteHandler<TCtx, TRes>,
+  meta?: RouteMeta
+): RouteConfig<TCtx, TRes>
 ```
 
-### `createWorkerRouter(options)`
+为 handler 函数附加元数据。空对象 `{}` 的 meta 会被归一化为 `undefined`。
 
-| 选项 | 类型 | 说明 |
+**`RouteMeta` 字段：**
+
+| 字段 | 类型 | 说明 |
 |------|------|------|
-| `routes` | `WorkerManifestRoute[]` | 路由清单数组（由构建 CLI 生成） |
-| `notFound` | `(ctx) => any` | 自定义 404 处理器（可选） |
-| `onError` | `(err, req) => Response` | 全局错误处理器（可选） |
+| `requiresAuth` | `boolean` | 是否需要认证 |
+| `description` | `string` | 路由描述 |
+| `[key: string]` | `any` | 任意自定义元数据 |
 
-每个路由处理器接收 `WorkerRouteContext`，包含 `{ req, env, ctx, params, res }`。返回 `Response` 会直接使用，其他返回值自动序列化为 JSON。
+### `isRouteConfig(obj)`
+
+```typescript
+isRouteConfig(obj: any): obj is RouteConfig
+```
+
+若 `obj` 由 `createHandler()` 创建则返回 `true`。用于类型窄化。
+
+### 导出类型
+
+```typescript
+export type { RouteHandler, RouteMeta, RouteConfig, RouteInfo, AppRoutesRegistry } from '@chaeco/auto-router'
+export type { StaticRoute, StaticAutoRouterOptions } from '@chaeco/auto-router'
+```
+
+---
 
 ## 许可证
 
-本项目基于 MIT 许可证授权 — 详见 [LICENSE](LICENSE) 文件。
+MIT — 详见 [LICENSE](LICENSE)。

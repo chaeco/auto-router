@@ -1,12 +1,6 @@
-export default async function (ctx) {
-  const body = ctx.req?.body ?? {}
-  const { username, password } = body
-
-  if (!username || !password) {
-    ctx.res.status = 400
-    ctx.res.body = { error: 'Username and password required' }
-    return
-  }
+// POST /api/login
+export default async (ctx: any) => {
+  const { username, password } = ctx.req?.body ?? {}
 
   if (username === 'admin' && password === '123456') {
     ctx.res.body = { success: true, token: 'mock-jwt-token' }

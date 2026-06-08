@@ -1,4 +1,5 @@
-export default async function (ctx) {
+// GET /api/users
+export default async (ctx: any) => {
   ctx.res.body = {
     message: 'Hello from auto-router!',
     users: [

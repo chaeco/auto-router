@@ -222,6 +222,9 @@ async function loadRoutes(
 
   const importPromises: Promise<void>[] = [] // Collect all import promises
   // 收集所有导入 Promise
+  // Buffer route log lines for sorted output after all async imports resolve
+  // 缓存路由日志行，等所有异步导入完成后再排序输出
+  const routeLogLines: Array<{ path: string; method: string; line: string }> = []
 
   // Initialize app's route metadata storage (only once)
   // 初始化应用的路由元数据存储（仅一次）
@@ -567,7 +570,11 @@ async function loadRoutes(
               requiresAuth = defaultRequiresAuth
             }
             const authMark = requiresAuth ? ' 🔒' : ''
-            log('info', `✅ ${method.toUpperCase().padEnd(7)} ${routePath}${authMark}`)
+            routeLogLines.push({
+              path: routePath,
+              method: method.toUpperCase(),
+              line: `✅ ${method.toUpperCase().padEnd(7)} ${routePath}${authMark}`,
+            })
 
             // Collect route metadata to application instance
             // 收集路由元数据到应用实例
@@ -611,6 +618,13 @@ async function loadRoutes(
   // Wait for all imports to complete
   // 等待所有导入完成
   await Promise.all(importPromises)
+
+  // Flush sorted route registration logs
+  // 排序后输出所有路由注册日志
+  routeLogLines.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method))
+  for (const { line } of routeLogLines) {
+    log('info', line)
+  }
 
   // Validate forcePublic / forceProtected pattern reasonableness
   // 校验 forcePublic / forceProtected 规则合理性

@@ -129,6 +129,10 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
 
     log('info', `🔄 Loading ${routes.length} static routes`)
 
+    // Buffer route log lines for sorted output
+    // 缓存路由日志行，用于排序输出
+    const routeLogLines: Array<{ path: string; method: string; line: string }> = []
+
     for (const { method, path: routePath, handler: rawHandler } of routes) {
       const normalizedMethod = method.toLowerCase()
       const routeKey = `${normalizedMethod.toUpperCase()} ${routePath}`
@@ -186,7 +190,11 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
       }
 
       const authMark = authResult.requiresAuth ? ' 🔒' : ''
-      log('info', `✅ ${normalizedMethod.toUpperCase().padEnd(7)} ${routePath}${authMark}`)
+      routeLogLines.push({
+        path: routePath,
+        method: normalizedMethod.toUpperCase(),
+        line: `✅ ${normalizedMethod.toUpperCase().padEnd(7)} ${routePath}${authMark}`,
+      })
 
       const routeInfo: RouteInfo = { method: normalizedMethod.toUpperCase(), path: routePath, requiresAuth: authResult.requiresAuth }
       if (routeMeta) {
@@ -200,6 +208,13 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
       }
 
       app[normalizedMethod](routePath, handler)
+    }
+
+    // Flush sorted route registration logs
+    // 排序后输出所有路由注册日志
+    routeLogLines.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method))
+    for (const { line } of routeLogLines) {
+      log('info', line)
     }
 
     for (const { route, publicPattern, protectedPattern } of conflictRoutes) {

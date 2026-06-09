@@ -53,6 +53,8 @@ export interface RouteInfo {
     method: string;
     path: string;
     requiresAuth?: boolean;
+    /** Route metadata provided via createHandler (summary, tags, description, etc.) */
+    meta?: RouteMeta;
 }
 /**
  * Application routes registry interface

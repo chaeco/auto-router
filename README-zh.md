@@ -446,10 +446,12 @@ autoRouter({ dir: './controllers', prefix: '' })
 加载完成后，`app.$routes` 包含所有已注册路由的元数据：
 
 ```typescript
-app.$routes.all             // RouteInfo[]   — 所有已注册路由
+app.$routes.all             // RouteInfo[]         — 所有已注册路由
 app.$routes.publicRoutes    // { method, path }[]  — 公开路由
 app.$routes.protectedRoutes // { method, path }[]  — 受保护路由
 ```
+
+`RouteInfo` 包含 `method`、`path`、`requiresAuth` 和 `meta`（若通过 `createHandler` 传入则为其 `RouteMeta`）。
 
 用于与认证中间件集成：
 

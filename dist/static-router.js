@@ -127,6 +127,9 @@ export function staticAutoRouter(options) {
             const authMark = authResult.requiresAuth ? ' 🔒' : '';
             log('info', `✅ ${normalizedMethod.toUpperCase().padEnd(7)} ${routePath}${authMark}`);
             const routeInfo = { method: normalizedMethod.toUpperCase(), path: routePath, requiresAuth: authResult.requiresAuth };
+            if (routeMeta) {
+                routeInfo.meta = routeMeta;
+            }
             app.$routes.all.push(routeInfo);
             if (authResult.requiresAuth) {
                 app.$routes.protectedRoutes.push({ method: normalizedMethod.toUpperCase(), path: routePath });

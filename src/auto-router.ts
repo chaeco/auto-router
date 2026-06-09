@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from 'fs'
 import { join, resolve } from 'path'
 import { pathToFileURL } from 'url'
-import { isRouteConfig, RouteMeta } from './handler'
+import { isRouteConfig, RouteMeta, type RouteInfo } from './handler'
 
 /**
  * Auto Router Loading Plugin
@@ -571,7 +571,10 @@ async function loadRoutes(
 
             // Collect route metadata to application instance
             // 收集路由元数据到应用实例
-            const routeInfo = { method: method.toUpperCase(), path: routePath, requiresAuth }
+            const routeInfo: RouteInfo = { method: method.toUpperCase(), path: routePath, requiresAuth }
+            if (routeMeta) {
+              routeInfo.meta = routeMeta
+            }
             app.$routes.all.push(routeInfo)
             if (requiresAuth) {
               app.$routes.protectedRoutes.push({ method: method.toUpperCase(), path: routePath })

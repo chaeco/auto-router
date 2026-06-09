@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.8] - 2026-06-09
+
+### Added
+
+- **`RouteInfo.meta`** — `createHandler` metadata is now preserved in `app.$routes.all`, making it accessible for API documentation generators, introspection panels, and OpenAPI adapters. Previously, `requiresAuth` and other meta fields were used for auth resolution but discarded from the route registry.
+
+### Changed
+
+- **`staticAutoRouter`** — matches `autoRouter` behaviour: route meta is now written to `app.$routes.all` entries.
+
 ## [0.0.6] - 2026-02-28
 
 ### Added

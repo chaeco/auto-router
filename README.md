@@ -446,10 +446,12 @@ autoRouter({ dir: './controllers', prefix: '' })
 After loading, `app.$routes` contains all registered route metadata:
 
 ```typescript
-app.$routes.all             // RouteInfo[]   — every registered route
+app.$routes.all             // RouteInfo[]         — every registered route
 app.$routes.publicRoutes    // { method, path }[]  — public routes
 app.$routes.protectedRoutes // { method, path }[]  — protected routes
 ```
+
+`RouteInfo` contains `method`, `path`, `requiresAuth`, and `meta` (the `RouteMeta` passed to `createHandler`, if any).
 
 This is designed for integrating with auth middleware:
 

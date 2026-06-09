@@ -1,4 +1,4 @@
-import { isRouteConfig } from './handler'
+import { isRouteConfig, type RouteInfo } from './handler'
 
 /** Static route entry — callers statically import handlers and declare method/path. */
 export interface StaticRoute {
@@ -188,7 +188,10 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
       const authMark = authResult.requiresAuth ? ' 🔒' : ''
       log('info', `✅ ${normalizedMethod.toUpperCase().padEnd(7)} ${routePath}${authMark}`)
 
-      const routeInfo = { method: normalizedMethod.toUpperCase(), path: routePath, requiresAuth: authResult.requiresAuth }
+      const routeInfo: RouteInfo = { method: normalizedMethod.toUpperCase(), path: routePath, requiresAuth: authResult.requiresAuth }
+      if (routeMeta) {
+        routeInfo.meta = routeMeta
+      }
       app.$routes.all.push(routeInfo)
       if (authResult.requiresAuth) {
         app.$routes.protectedRoutes.push({ method: normalizedMethod.toUpperCase(), path: routePath })

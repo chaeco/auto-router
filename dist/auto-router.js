@@ -519,6 +519,9 @@ async function loadRoutes(app, options) {
                     // Collect route metadata to application instance
                     // 收集路由元数据到应用实例
                     const routeInfo = { method: method.toUpperCase(), path: routePath, requiresAuth };
+                    if (routeMeta) {
+                        routeInfo.meta = routeMeta;
+                    }
                     app.$routes.all.push(routeInfo);
                     if (requiresAuth) {
                         app.$routes.protectedRoutes.push({ method: method.toUpperCase(), path: routePath });

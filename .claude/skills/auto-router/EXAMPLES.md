@@ -248,7 +248,7 @@ export default createHandler(
 )
 ```
 
-Custom meta fields are accessible via `app.$routes.all[i].requiresAuth` (for built-in) or by inspecting the `RouteConfig` object directly.
+Custom meta fields are accessible via `app.$routes.all[i].meta` after loading.
 
 ## Scenario 11: Cloudflare Workers (static manifest)
 

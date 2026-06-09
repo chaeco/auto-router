@@ -165,7 +165,7 @@ isRouteConfig(obj): obj is RouteConfig
 type RouteHandler<TCtx, TRes>  // conditional: single-ctx vs dual-param
 type RouteMeta { requiresAuth?, description?, [key: string]: any }
 type RouteConfig<TCtx, TRes> { handler, meta? }
-type RouteInfo { method, path, requiresAuth? }
+type RouteInfo { method, path, requiresAuth?, meta? }
 type AppRoutesRegistry { publicRoutes, protectedRoutes, all }
 
 type StaticRoute { method, path, handler }

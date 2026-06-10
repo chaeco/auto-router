@@ -289,3 +289,55 @@ app.extend(autoRouter({
   },
 }))
 ```
+
+## Scenario 13: Parameter validation with zod
+
+auto-router does not validate route parameters — all `[param]` values are strings. Validate and coerce them in your handler, or use zod for schema-based validation.
+
+```typescript
+import { z } from 'zod'
+import { createHandler } from '@chaeco/auto-router'
+
+// Path param validation
+const ParamsSchema = z.object({
+  userId: z.string().regex(/^\d+$/, 'userId must be numeric'),
+  id: z.string().regex(/^\d+$/, 'id must be numeric'),
+})
+
+// Request body validation
+const PostSchema = z.object({
+  title: z.string().min(1).max(200),
+  content: z.string().optional(),
+})
+
+// controllers/users/[userId]/posts/get-[id].ts — path param validation
+export default createHandler(
+  async (ctx) => {
+    const result = ParamsSchema.safeParse(ctx.params)
+    if (!result.success) {
+      ctx.res.status = 400
+      ctx.res.body = { error: 'Invalid parameters', details: result.error.flatten() }
+      return
+    }
+    const { userId, id } = result.data
+    ctx.res.body = { userId, postId: id }
+  },
+  { description: 'Get post by ID', tags: ['Posts'] }
+)
+
+// controllers/users/[userId]/posts/post.ts — body validation
+export default createHandler(
+  async (ctx) => {
+    const result = PostSchema.safeParse(ctx.req?.body ?? {})
+    if (!result.success) {
+      ctx.res.status = 400
+      ctx.res.body = { error: 'Validation failed', details: result.error.flatten() }
+      return
+    }
+    const { title, content } = result.data
+    ctx.res.status = 201
+    ctx.res.body = { id: Date.now(), title, content }
+  },
+  { description: 'Create post', tags: ['Posts'] }
+)
+```

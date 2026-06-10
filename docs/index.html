@@ -43,35 +43,18 @@
     }
   </script>
   <style>
-    /* Smooth scroll */
-    html {
-      scroll-behavior: smooth;
-    }
+    html { scroll-behavior: smooth; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #0f172a;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #475569;
-    }
-
-    /* Code block styling */
     .code-block {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       border: 1px solid #334155;
       border-radius: 8px;
       overflow: hidden;
     }
-
     .code-header {
       background: #1e293b;
       border-bottom: 1px solid #334155;
@@ -80,30 +63,21 @@
       align-items: center;
       gap: 8px;
     }
-
-    .code-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-
+    .code-dot { width: 12px; height: 12px; border-radius: 50%; }
     .code-content {
       padding: 16px;
       overflow-x: auto;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      line-height: 1.6;
+      font-size: 13px;
+      line-height: 1.7;
       color: #e2e8f0;
     }
-
-    /* Syntax highlighting */
     .keyword { color: #c084fc; }
     .string { color: #34d399; }
     .comment { color: #64748b; }
     .function { color: #60a5fa; }
     .operator { color: #f472b6; }
-
-    /* Glow effect for hero */
+    .type { color: #fbbf24; }
     .hero-glow {
       position: absolute;
       top: 50%;
@@ -115,73 +89,48 @@
       pointer-events: none;
       filter: blur(60px);
     }
-
-    /* Feature card hover */
     .feature-card {
       transition: all 0.3s ease;
       border: 1px solid #334155;
     }
-
     .feature-card:hover {
       border-color: #10b981;
       transform: translateY(-2px);
     }
-
-    /* File tree */
-    .file-tree {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      color: #94a3b8;
-    }
-
-    .file-tree .dir {
-      color: #60a5fa;
-    }
-
-    .file-tree .file {
-      color: #34d399;
-    }
-
-    .file-tree .route {
-      color: #f59e0b;
-    }
-
-    /* Copy button */
-    .copy-btn {
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .code-block:hover .copy-btn {
-      opacity: 1;
-    }
-
-    /* Animations */
+    .file-tree { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+    .file-tree .dir { color: #60a5fa; }
+    .file-tree .file { color: #34d399; }
+    .file-tree .route { color: #f59e0b; }
+    .file-tree .comment { color: #64748b; }
     @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-
-    .animate-fade-in-up {
-      animation: fadeInUp 0.6s ease-out forwards;
-    }
-
+    .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
     .delay-100 { animation-delay: 0.1s; }
     .delay-200 { animation-delay: 0.2s; }
     .delay-300 { animation-delay: 0.3s; }
     .delay-400 { animation-delay: 0.4s; }
+    .delay-500 { animation-delay: 0.5s; }
+    .section-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border: 1px solid #334155;
+      border-radius: 12px;
+    }
+    .param-badge {
+      background: #1e293b;
+      border: 1px solid #475569;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body class="bg-dark-950 text-dark-100 font-sans antialiased">
 
   <!-- Navigation -->
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-dark-950/80 backdrop-blur-lg border-b border-dark-700">
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-dark-950/80 backdrop-blur-lg border-b border-dark-800">
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
       <a href="#" class="flex items-center gap-3">
         <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
@@ -194,6 +143,8 @@
       <div class="flex items-center gap-6">
         <a href="#features" class="text-dark-300 hover:text-white transition-colors text-sm">Features</a>
         <a href="#quick-start" class="text-dark-300 hover:text-white transition-colors text-sm">Quick Start</a>
+        <a href="#file-naming" class="text-dark-300 hover:text-white transition-colors text-sm">File Naming</a>
+        <a href="#auth" class="text-dark-300 hover:text-white transition-colors text-sm">Auth</a>
         <a href="#api" class="text-dark-300 hover:text-white transition-colors text-sm">API</a>
         <a href="https://github.com/chaeco/auto-router" target="_blank" class="text-dark-300 hover:text-white transition-colors">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -208,7 +159,7 @@
   </nav>
 
   <!-- Hero Section -->
-  <section class="relative min-h-screen flex items-center justify-center pt-20">
+  <section class="relative min-h-screen flex items-center justify-center pt-20 pb-12">
     <div class="hero-glow"></div>
     <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
       <div class="animate-fade-in-up opacity-0">
@@ -241,25 +192,14 @@
         </a>
       </div>
 
-      <!-- Code Preview -->
-      <div class="code-block text-left max-w-3xl mx-auto animate-fade-in-up opacity-0 delay-400">
-        <div class="code-header">
-          <div class="code-dot bg-red-500"></div>
-          <div class="code-dot bg-yellow-500"></div>
-          <div class="code-dot bg-green-500"></div>
-          <span class="text-dark-400 text-sm ml-2">controllers/get-users.ts</span>
-        </div>
-        <pre class="code-content"><span class="keyword">import</span> { createHandler } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
-
-<span class="keyword">export default</span> <span class="function">createHandler</span>(
-  <span class="keyword">async</span> (ctx) <span class="operator">=></span> {
-    <span class="keyword">const</span> users = <span class="keyword">await</span> db.users.<span class="function">findMany</span>()
-    ctx.res.body = { users }
-  },
-  { <span class="string">description</span>: <span class="string">'List all users'</span>, <span class="string">tags</span>: [<span class="string">'Users'</span>] }
-)
-
-<span class="comment">// → GET /api/users</span></pre>
+      <!-- Framework badges -->
+      <div class="flex flex-wrap items-center justify-center gap-3 animate-fade-in-up opacity-0 delay-400">
+        <span class="text-dark-500 text-sm">Works with:</span>
+        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Hoa</span>
+        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Koa</span>
+        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Express</span>
+        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Fastify</span>
+        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Hono</span>
       </div>
     </div>
   </section>
@@ -275,7 +215,6 @@
       </div>
 
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Feature 1 -->
         <div class="feature-card bg-dark-900 rounded-xl p-6">
           <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
             <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,7 +227,6 @@
           </p>
         </div>
 
-        <!-- Feature 2 -->
         <div class="feature-card bg-dark-900 rounded-xl p-6">
           <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
             <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +239,6 @@
           </p>
         </div>
 
-        <!-- Feature 3 -->
         <div class="feature-card bg-dark-900 rounded-xl p-6">
           <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
             <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,7 +251,6 @@
           </p>
         </div>
 
-        <!-- Feature 4 -->
         <div class="feature-card bg-dark-900 rounded-xl p-6">
           <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
             <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,7 +263,6 @@
           </p>
         </div>
 
-        <!-- Feature 5 -->
         <div class="feature-card bg-dark-900 rounded-xl p-6">
           <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
             <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,7 +275,6 @@
           </p>
         </div>
 
-        <!-- Feature 6 -->
         <div class="feature-card bg-dark-900 rounded-xl p-6">
           <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
             <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -378,38 +312,45 @@
           </p>
 
           <div class="bg-dark-900 border border-dark-700 rounded-xl p-6">
-            <div class="file-tree space-y-2">
-              <div class="flex items-center gap-2">
-                <span class="text-blue-400">📁</span>
-                <span class="dir">controllers/</span>
+            <div class="file-tree space-y-1">
+              <div class="flex items-center gap-2 mb-3">
+                <span>📁</span><span class="dir">controllers/</span>
               </div>
               <div class="flex items-center gap-2 ml-6">
-                <span class="text-emerald-400">📄</span>
                 <span class="file">get-users.ts</span>
                 <span class="text-dark-500">→</span>
                 <span class="route">GET /api/users</span>
               </div>
               <div class="flex items-center gap-2 ml-6">
-                <span class="text-emerald-400">📄</span>
                 <span class="file">get-[id].ts</span>
                 <span class="text-dark-500">→</span>
                 <span class="route">GET /api/:id</span>
               </div>
               <div class="flex items-center gap-2 ml-6">
-                <span class="text-emerald-400">📄</span>
                 <span class="file">post-login.ts</span>
                 <span class="text-dark-500">→</span>
                 <span class="route">POST /api/login</span>
               </div>
               <div class="flex items-center gap-2 ml-6">
-                <span class="text-blue-400">📁</span>
-                <span class="dir">users/[userId]/posts/</span>
+                <span class="file">get-[userId]-posts.ts</span>
+                <span class="text-dark-500">→</span>
+                <span class="route">GET /api/:userId/posts</span>
+              </div>
+              <div class="flex items-center gap-2 ml-6 mt-4 mb-2">
+                <span>📁</span><span class="dir">users/[userId]/</span>
               </div>
               <div class="flex items-center gap-2 ml-12">
-                <span class="text-emerald-400">📄</span>
                 <span class="file">get.ts</span>
                 <span class="text-dark-500">→</span>
-                <span class="route">GET /api/users/:userId/posts</span>
+                <span class="route">GET /api/users/:userId</span>
+              </div>
+              <div class="flex items-center gap-2 ml-12">
+                <span>📁</span><span class="dir">posts/</span>
+              </div>
+              <div class="flex items-center gap-2 ml-18 ml-[3.5rem]">
+                <span class="file">get-[id].ts</span>
+                <span class="text-dark-500">→</span>
+                <span class="route">GET /api/users/:userId/posts/:id</span>
               </div>
             </div>
           </div>
@@ -450,111 +391,593 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
     </div>
   </section>
 
-  <!-- API Reference Section -->
+  <!-- File Naming Convention -->
+  <section id="file-naming" class="py-24 border-t border-dark-800">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">File Naming Convention</h2>
+        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
+          Every route file name encodes the HTTP method and URL structure.
+        </p>
+      </div>
+
+      <!-- Basic Formats -->
+      <div class="mb-12">
+        <h3 class="text-xl font-semibold mb-4">Basic Formats</h3>
+        <div class="section-card p-6 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-dark-400 border-b border-dark-700">
+                <th class="pb-3">File name</th>
+                <th class="pb-3">Registers</th>
+              </tr>
+            </thead>
+            <tbody class="font-mono text-sm">
+              <tr class="border-b border-dark-800">
+                <td class="py-3 text-emerald-400">get.ts</td>
+                <td class="py-3 text-dark-300">GET /api (at root directory)</td>
+              </tr>
+              <tr class="border-b border-dark-800">
+                <td class="py-3 text-emerald-400">get-users.ts</td>
+                <td class="py-3 text-dark-300">GET /api/users</td>
+              </tr>
+              <tr class="border-b border-dark-800">
+                <td class="py-3 text-emerald-400">post-login.ts</td>
+                <td class="py-3 text-dark-300">POST /api/login</td>
+              </tr>
+              <tr class="border-b border-dark-800">
+                <td class="py-3 text-emerald-400">admin/get.ts</td>
+                <td class="py-3 text-dark-300">GET /api/admin</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Parameter Syntax -->
+      <div class="mb-12">
+        <h3 class="text-xl font-semibold mb-4">Dynamic Parameters</h3>
+        <p class="text-dark-400 mb-4">
+          Wrap parameter names in <code class="text-emerald-400">[brackets]</code>. Each <code class="text-dark-400">-</code> between segments becomes <code class="text-dark-400">/</code> in the URL.
+        </p>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="section-card p-6">
+            <h4 class="font-semibold mb-3 text-dark-200">Single Parameter</h4>
+            <div class="space-y-3 font-mono text-sm">
+              <div class="flex items-center justify-between">
+                <code class="text-emerald-400">get-[id].ts</code>
+                <span class="text-dark-500">→</span>
+                <span class="text-dark-300">GET /api/:id</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <code class="text-emerald-400">delete-[id].ts</code>
+                <span class="text-dark-500">→</span>
+                <span class="text-dark-300">DELETE /api/:id</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <code class="text-emerald-400">get-[userId].ts</code>
+                <span class="text-dark-500">→</span>
+                <span class="text-dark-300">GET /api/:userId</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card p-6">
+            <h4 class="font-semibold mb-3 text-dark-200">Multiple Parameters</h4>
+            <div class="space-y-3 font-mono text-sm">
+              <div class="flex items-center justify-between">
+                <code class="text-emerald-400">get-[userId]-posts.ts</code>
+                <span class="text-dark-500">→</span>
+                <span class="text-dark-300">GET /api/:userId/posts</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <code class="text-emerald-400">get-[userId]-[postId].ts</code>
+                <span class="text-dark-500">→</span>
+                <span class="text-dark-300">GET /api/:userId/:postId</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <code class="text-emerald-400">get-[a]-[b]-[c].ts</code>
+                <span class="text-dark-500">→</span>
+                <span class="text-dark-300">GET /api/:a/:b/:c</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Directories -->
+      <div class="mb-12">
+        <h3 class="text-xl font-semibold mb-4">Dynamic Directory Names</h3>
+        <p class="text-dark-400 mb-4">
+          Directory names can also contain <code class="text-emerald-400">[param]</code> brackets. Recommended for resource hierarchies with 3+ path segments.
+        </p>
+
+        <div class="section-card p-6 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-dark-400 border-b border-dark-700">
+                <th class="pb-3">File path</th>
+                <th class="pb-3">Registers</th>
+              </tr>
+            </thead>
+            <tbody class="font-mono text-sm">
+              <tr class="border-b border-dark-800">
+                <td class="py-3 text-emerald-400">users/[userId]/get.ts</td>
+                <td class="py-3 text-dark-300">GET /api/users/:userId</td>
+              </tr>
+              <tr class="border-b border-dark-800">
+                <td class="py-3 text-emerald-400">users/[userId]/posts/get.ts</td>
+                <td class="py-3 text-dark-300">GET /api/users/:userId/posts</td>
+              </tr>
+              <tr class="border-b border-dark-800">
+                <td class="py-3 text-emerald-400">users/[userId]/posts/[id]/get.ts</td>
+                <td class="py-3 text-dark-300">GET /api/users/:userId/posts/:id</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Conversion Rules -->
+      <div class="section-card p-6">
+        <h3 class="text-xl font-semibold mb-4">Route Conversion Rules</h3>
+        <p class="text-dark-400 mb-4">
+          The file name goes through three regex passes to convert to a route path:
+        </p>
+        <div class="code-block">
+          <pre class="code-content"><span class="comment">// Step 1: [param] → :param</span>
+  <span class="string">[userId]</span>        <span class="operator">→</span>  <span class="string">:userId</span>
+
+<span class="comment">// Step 2: -:/ → /:</span>
+  <span class="string">-:</span>             <span class="operator">→</span>  <span class="string">/:</span>
+
+<span class="comment">// Step 3: :param-/ → :param/</span>
+  <span class="string">:userId-</span>         <span class="operator">→</span>  <span class="string">:userId/</span></pre>
+        </div>
+        <div class="mt-4 p-4 bg-dark-800/50 rounded-lg">
+          <p class="text-sm text-dark-400">
+            <strong class="text-dark-300">Note:</strong> The <code class="text-dark-300">-</code> character is <strong class="text-dark-300">always</strong> interpreted as a path separator. You cannot express a literal hyphen in a route path via file naming.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Auth & Permissions -->
+  <section id="auth" class="py-24 border-t border-dark-800">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Auth & Permissions</h2>
+        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
+          Built-in auth metadata with fine-grained control over route access.
+        </p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-8 mb-12">
+        <!-- Blacklist Mode -->
+        <div class="section-card p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-3 h-3 bg-emerald-500 rounded-full"></span>
+            <h3 class="text-lg font-semibold">Blacklist Mode</h3>
+          </div>
+          <p class="text-dark-400 text-sm mb-4">
+            Public by default. Mark only protected routes.
+          </p>
+          <div class="code-block">
+            <pre class="code-content"><span class="function">autoRouter</span>({
+  <span class="string">dir</span>: <span class="string">'./controllers'</span>,
+  <span class="string">defaultRequiresAuth</span>: <span class="keyword">false</span>,
+})</pre>
+          </div>
+        </div>
+
+        <!-- Whitelist Mode -->
+        <div class="section-card p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+            <h3 class="text-lg font-semibold">Whitelist Mode</h3>
+          </div>
+          <p class="text-dark-400 text-sm mb-4">
+            Protected by default. Mark only public routes.
+          </p>
+          <div class="code-block">
+            <pre class="code-content"><span class="function">autoRouter</span>({
+  <span class="string">dir</span>: <span class="string">'./controllers'</span>,
+  <span class="string">defaultRequiresAuth</span>: <span class="keyword">true</span>,
+})</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- forcePublic / forceProtected -->
+      <div class="section-card p-6">
+        <h3 class="text-lg font-semibold mb-4">Bulk Auth Overrides</h3>
+        <p class="text-dark-400 text-sm mb-4">
+          Use <code class="text-emerald-400">forcePublic</code> and <code class="text-emerald-400">forceProtected</code> to declare routes that are always public or always protected, independent of the global default.
+        </p>
+
+        <div class="code-block mb-4">
+          <div class="code-header">
+            <span class="text-dark-400 text-sm">auth configuration</span>
+          </div>
+          <pre class="code-content"><span class="function">autoRouter</span>({
+  <span class="string">dir</span>: <span class="string">'./controllers'</span>,
+  <span class="string">prefix</span>: <span class="string">'/api'</span>,
+  <span class="string">defaultRequiresAuth</span>: <span class="keyword">true</span>,      <span class="comment">// whitelist mode</span>
+  <span class="string">forcePublic</span>: [
+    <span class="string">'/api/auth/*'</span>,              <span class="comment">// all auth routes are public</span>
+    <span class="string">'/api/public/*'</span>,           <span class="comment">// public data routes</span>
+  ],
+  <span class="string">forceProtected</span>: [
+    <span class="string">'/api/admin/*'</span>,             <span class="comment">// all admin routes protected</span>
+    <span class="string">'POST /api/users'</span>,         <span class="comment">// only POST /api/users</span>
+  ],
+})</pre>
+        </div>
+
+        <!-- Pattern Formats -->
+        <h4 class="font-semibold mt-6 mb-3">Pattern Formats</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-dark-400 border-b border-dark-700">
+                <th class="pb-3">Format</th>
+                <th class="pb-3">Example</th>
+                <th class="pb-3">Matches</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              <tr class="border-b border-dark-800">
+                <td class="py-3 font-mono text-emerald-400">Exact path</td>
+                <td class="py-3 text-dark-300">'/api/users'</td>
+                <td class="py-3 text-dark-400">All methods on /api/users</td>
+              </tr>
+              <tr class="border-b border-dark-800">
+                <td class="py-3 font-mono text-emerald-400">Wildcard</td>
+                <td class="py-3 text-dark-300">'/api/admin/*'</td>
+                <td class="py-3 text-dark-400">Sub-paths under /api/admin/</td>
+              </tr>
+              <tr class="border-b border-dark-800">
+                <td class="py-3 font-mono text-emerald-400">Method + path</td>
+                <td class="py-3 text-dark-300">'POST /api/users'</td>
+                <td class="py-3 text-dark-400">Only POST on /api/users</td>
+              </tr>
+              <tr>
+                <td class="py-3 font-mono text-emerald-400">Method + wildcard</td>
+                <td class="py-3 text-dark-300">'DELETE /api/admin/*'</td>
+                <td class="py-3 text-dark-400">DELETE under /api/admin/</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Priority Chain -->
+        <div class="mt-6 p-4 bg-dark-800/50 rounded-lg">
+          <h4 class="font-semibold mb-2">Priority Chain</h4>
+          <p class="text-sm text-dark-400">
+            <code class="text-emerald-400">createHandler meta</code> &gt; <code class="text-emerald-400">forceProtected / forcePublic</code> &gt; <code class="text-emerald-400">defaultRequiresAuth</code>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Export Methods -->
+  <section id="exports" class="py-24 border-t border-dark-800">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Export Methods</h2>
+        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
+          Two ways to export route handlers.
+        </p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-8">
+        <!-- Pure Function -->
+        <div class="section-card p-6">
+          <h3 class="text-lg font-semibold mb-4">Method 1: Pure Function</h3>
+          <p class="text-dark-400 text-sm mb-4">
+            Simplest form. Route inherits global <code class="text-dark-300">defaultRequiresAuth</code>.
+          </p>
+          <div class="code-block">
+            <pre class="code-content"><span class="comment">// controllers/get-users.ts</span>
+<span class="keyword">export default</span> <span class="keyword">async</span> (ctx) <span class="operator">=></span> {
+  ctx.res.body = { users: [] }
+}</pre>
+          </div>
+        </div>
+
+        <!-- createHandler -->
+        <div class="section-card p-6">
+          <h3 class="text-lg font-semibold mb-4">Method 2: createHandler</h3>
+          <p class="text-dark-400 text-sm mb-4">
+            Use when you need per-route metadata (auth, description, tags).
+          </p>
+          <div class="code-block">
+            <pre class="code-content"><span class="keyword">import</span> { <span class="function">createHandler</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
+
+<span class="keyword">export default</span> <span class="function">createHandler</span>(
+  <span class="keyword">async</span> (ctx) <span class="operator">=></span> {
+    ctx.res.body = { success: <span class="keyword">true</span> }
+  },
+  {
+    <span class="string">requiresAuth</span>: <span class="keyword">true</span>,
+    <span class="string">description</span>: <span class="string">'Get user profile'</span>,
+    <span class="string">tags</span>: [<span class="string">'Users'</span>],
+  }
+)</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- RouteMeta Fields -->
+      <div class="mt-8 section-card p-6">
+        <h3 class="text-lg font-semibold mb-4">RouteMeta Fields</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-dark-400 border-b border-dark-700">
+                <th class="pb-3">Field</th>
+                <th class="pb-3">Type</th>
+                <th class="pb-3">Description</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              <tr class="border-b border-dark-800">
+                <td class="py-3 font-mono text-emerald-400">requiresAuth</td>
+                <td class="py-3 text-dark-300">boolean</td>
+                <td class="py-3 text-dark-400">Whether auth is required</td>
+              </tr>
+              <tr class="border-b border-dark-800">
+                <td class="py-3 font-mono text-emerald-400">description</td>
+                <td class="py-3 text-dark-300">string</td>
+                <td class="py-3 text-dark-400">Human-readable description</td>
+              </tr>
+              <tr class="border-b border-dark-800">
+                <td class="py-3 font-mono text-emerald-400">tags</td>
+                <td class="py-3 text-dark-300">string[]</td>
+                <td class="py-3 text-dark-400">For API documentation grouping</td>
+              </tr>
+              <tr>
+                <td class="py-3 font-mono text-emerald-400">[key: string]</td>
+                <td class="py-3 text-dark-300">any</td>
+                <td class="py-3 text-dark-400">Any custom metadata</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- API Reference -->
   <section id="api" class="py-24 border-t border-dark-800">
     <div class="max-w-6xl mx-auto px-6">
-      <div class="text-center mb-16">
+      <div class="text-center mb-12">
         <h2 class="text-3xl md:text-4xl font-bold mb-4">API Reference</h2>
         <p class="text-dark-400 text-lg max-w-2xl mx-auto">
           Clean, minimal API. Three main exports.
         </p>
       </div>
 
-      <div class="space-y-8">
-        <!-- autoRouter -->
-        <div class="bg-dark-900 border border-dark-700 rounded-xl overflow-hidden">
-          <div class="p-6 border-b border-dark-700">
-            <div class="flex items-center gap-3">
-              <code class="text-emerald-400 font-mono text-lg">autoRouter(options)</code>
-              <span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-1 rounded">Core</span>
-            </div>
-            <p class="text-dark-400 mt-2">
-              Factory function that returns a plugin for <code class="text-dark-300">app.extend()</code>. Scans your controller directory and registers all routes automatically.
-            </p>
+      <!-- autoRouter -->
+      <div class="section-card overflow-hidden mb-8">
+        <div class="p-6 border-b border-dark-700">
+          <div class="flex items-center gap-3 flex-wrap">
+            <code class="text-emerald-400 font-mono text-lg">autoRouter(options)</code>
+            <span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-1 rounded">Core</span>
           </div>
-          <div class="p-6 bg-dark-800/50">
-            <h4 class="text-sm font-semibold text-dark-300 mb-3">Options</h4>
-            <div class="grid md:grid-cols-2 gap-4 text-sm">
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">dir</code>
-                <span class="text-dark-400">Controller directory path</span>
-              </div>
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">prefix</code>
-                <span class="text-dark-400">Route prefix (string or array)</span>
-              </div>
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">defaultRequiresAuth</code>
-                <span class="text-dark-400">Global auth default</span>
-              </div>
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">forcePublic</code>
-                <span class="text-dark-400">Always-public route patterns</span>
-              </div>
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">forceProtected</code>
-                <span class="text-dark-400">Always-protected route patterns</span>
-              </div>
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">onLog</code>
-                <span class="text-dark-400">Custom log callback</span>
-              </div>
+          <p class="text-dark-400 mt-2">
+            Factory function. Returns an async plugin for <code class="text-dark-300">app.extend()</code>.
+          </p>
+        </div>
+        <div class="p-6">
+          <h4 class="text-sm font-semibold text-dark-300 mb-4">Options</h4>
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <div>
+              <code class="text-emerald-400 font-mono">dir</code>
+              <span class="text-dark-500 ml-2">string</span>
+              <p class="text-dark-500 text-xs mt-1">Controller directory path</p>
+            </div>
+            <div>
+              <code class="text-emerald-400 font-mono">prefix</code>
+              <span class="text-dark-500 ml-2">string | string[]</span>
+              <p class="text-dark-500 text-xs mt-1">Route prefix</p>
+            </div>
+            <div>
+              <code class="text-emerald-400 font-mono">defaultRequiresAuth</code>
+              <span class="text-dark-500 ml-2">boolean</span>
+              <p class="text-dark-500 text-xs mt-1">Global auth default</p>
+            </div>
+            <div>
+              <code class="text-emerald-400 font-mono">forcePublic</code>
+              <span class="text-dark-500 ml-2">string[]</span>
+              <p class="text-dark-500 text-xs mt-1">Always-public patterns</p>
+            </div>
+            <div>
+              <code class="text-emerald-400 font-mono">forceProtected</code>
+              <span class="text-dark-500 ml-2">string[]</span>
+              <p class="text-dark-500 text-xs mt-1">Always-protected patterns</p>
+            </div>
+            <div>
+              <code class="text-emerald-400 font-mono">strict</code>
+              <span class="text-dark-500 ml-2">boolean</span>
+              <p class="text-dark-500 text-xs mt-1">Strict export validation</p>
+            </div>
+            <div>
+              <code class="text-emerald-400 font-mono">logging</code>
+              <span class="text-dark-500 ml-2">boolean</span>
+              <p class="text-dark-500 text-xs mt-1">Console log output</p>
+            </div>
+            <div>
+              <code class="text-emerald-400 font-mono">onLog</code>
+              <span class="text-dark-500 ml-2">function</span>
+              <p class="text-dark-500 text-xs mt-1">Custom log callback</p>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- createHandler -->
-        <div class="bg-dark-900 border border-dark-700 rounded-xl overflow-hidden">
-          <div class="p-6 border-b border-dark-700">
-            <div class="flex items-center gap-3">
-              <code class="text-emerald-400 font-mono text-lg">createHandler(handler, meta?)</code>
-              <span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-1 rounded">Helper</span>
-            </div>
-            <p class="text-dark-400 mt-2">
-              Wraps a handler with metadata. Use when you need per-route auth or documentation info.
-            </p>
+      <!-- staticAutoRouter -->
+      <div class="section-card overflow-hidden mb-8">
+        <div class="p-6 border-b border-dark-700">
+          <div class="flex items-center gap-3 flex-wrap">
+            <code class="text-emerald-400 font-mono text-lg">staticAutoRouter(options)</code>
+            <span class="bg-blue-500/10 text-blue-400 text-xs px-2 py-1 rounded">Edge</span>
           </div>
-          <div class="p-6 bg-dark-800/50">
-            <h4 class="text-sm font-semibold text-dark-300 mb-3">Meta Fields</h4>
-            <div class="grid md:grid-cols-2 gap-4 text-sm">
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">requiresAuth</code>
-                <span class="text-dark-400">Boolean auth override</span>
-              </div>
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">description</code>
-                <span class="text-dark-400">Human-readable description</span>
-              </div>
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">tags</code>
-                <span class="text-dark-400">For API documentation grouping</span>
-              </div>
-              <div class="flex items-start gap-3">
-                <code class="text-emerald-400 font-mono">[key: string]</code>
-                <span class="text-dark-400">Any custom metadata</span>
-              </div>
-            </div>
+          <p class="text-dark-400 mt-2">
+            For runtimes without filesystem access. Accepts statically imported routes.
+          </p>
+        </div>
+        <div class="p-6">
+          <div class="code-block">
+            <pre class="code-content"><span class="keyword">import</span> { <span class="function">staticAutoRouter</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
+<span class="keyword">import</span> getUsers <span class="keyword">from</span> <span class="string">'./controllers/get-users'</span>
+
+app.<span class="function">extend</span>(
+  <span class="function">staticAutoRouter</span>({
+    <span class="string">routes</span>: [
+      { <span class="string">method</span>: <span class="string">'get'</span>, <span class="string">path</span>: <span class="string">'/api/users'</span>, <span class="string">handler</span>: getUsers },
+    ],
+  })
+)</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Registry -->
+      <div class="section-card overflow-hidden">
+        <div class="p-6 border-b border-dark-700">
+          <div class="flex items-center gap-3 flex-wrap">
+            <code class="text-emerald-400 font-mono text-lg">app.$routes</code>
+            <span class="bg-purple-500/10 text-purple-400 text-xs px-2 py-1 rounded">Registry</span>
+          </div>
+          <p class="text-dark-400 mt-2">
+            Access all registered routes after loading. Perfect for auth middleware and API documentation generation.
+          </p>
+        </div>
+        <div class="p-6">
+          <div class="code-block">
+            <pre class="code-content">app.$routes.<span class="function">all</span>             <span class="comment">// RouteInfo[] — every registered route</span>
+app.$routes.<span class="function">publicRoutes</span>    <span class="comment">// { method, path }[] — public routes</span>
+app.$routes.<span class="function">protectedRoutes</span> <span class="comment">// { method, path }[] — protected routes</span>
+
+<span class="comment">// RouteInfo structure:</span>
+<span class="keyword">interface</span> <span class="type">RouteInfo</span> {
+  <span class="string">method</span>: <span class="type">string</span>
+  <span class="string">path</span>: <span class="type">string</span>
+  <span class="string">requiresAuth</span>?: <span class="type">boolean</span>
+  <span class="string">meta</span>?: <span class="type">RouteMeta</span>
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Frameworks Section -->
+  <section id="frameworks" class="py-24 border-t border-dark-800">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Works With Your Framework</h2>
+        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
+          Framework-agnostic design. Works with any Node.js framework that supports plugin extension.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="section-card p-6">
+          <h3 class="font-semibold mb-2">Hoa</h3>
+          <p class="text-dark-400 text-sm mb-4">Native plugin system via <code class="text-dark-300">app.extend()</code>.</p>
+          <div class="code-block text-xs">
+            <pre class="code-content">app.<span class="function">extend</span>(<span class="function">autoRouter</span>({...}))</pre>
           </div>
         </div>
 
-        <!-- Route Registry -->
-        <div class="bg-dark-900 border border-dark-700 rounded-xl overflow-hidden">
-          <div class="p-6 border-b border-dark-700">
-            <div class="flex items-center gap-3">
-              <code class="text-emerald-400 font-mono text-lg">app.$routes</code>
-              <span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-1 rounded">Registry</span>
-            </div>
-            <p class="text-dark-400 mt-2">
-              Access all registered routes after loading. Perfect for auth middleware and API doc generation.
-            </p>
+        <div class="section-card p-6">
+          <h3 class="font-semibold mb-2">Koa / Fastify</h3>
+          <p class="text-dark-400 text-sm mb-4">Via framework-specific adapters or <code class="text-dark-300">use()</code>.</p>
+          <div class="code-block text-xs">
+            <pre class="code-content">app.<span class="function">use</span>(<span class="keyword">await</span> <span class="function">autoRouter</span>({...}))</pre>
           </div>
-          <div class="p-6 bg-dark-800/50">
-            <div class="code-block">
-              <pre class="code-content"><span class="comment">// After app.extend(autoRouter(...))</span>
-app.$routes.<span class="function">all</span>             <span class="comment">// RouteInfo[] — every route</span>
-app.$routes.<span class="function">publicRoutes</span>    <span class="comment">// { method, path }[]</span>
-app.$routes.<span class="function">protectedRoutes</span> <span class="comment">// { method, path }[]</span></pre>
-            </div>
+        </div>
+
+        <div class="section-card p-6">
+          <h3 class="font-semibold mb-2">Express</h3>
+          <p class="text-dark-400 text-sm mb-4">Custom wrapper or adapter pattern.</p>
+          <div class="code-block text-xs">
+            <pre class="code-content"><span class="keyword">await</span> <span class="function">autoRouter</span>({...})(expressApp)</pre>
+          </div>
+        </div>
+
+        <div class="section-card p-6">
+          <h3 class="font-semibold mb-2">Hono</h3>
+          <p class="text-dark-400 text-sm mb-4">Recommended for Cloudflare Workers and edge runtimes.</p>
+          <div class="code-block text-xs">
+            <pre class="code-content">app.<span class="function">use</span>(<span class="keyword">await</span> <span class="function">staticAutoRouter</span>({...}))</pre>
+          </div>
+        </div>
+
+        <div class="section-card p-6">
+          <h3 class="font-semibold mb-2">Cloudflare Workers</h3>
+          <p class="text-dark-400 text-sm mb-4">Use <code class="text-dark-300">staticAutoRouter</code> for bundled deployments.</p>
+          <div class="code-block text-xs">
+            <pre class="code-content"><span class="keyword">export default</span> { fetch: router.fetch }</pre>
+          </div>
+        </div>
+
+        <div class="section-card p-6">
+          <h3 class="font-semibold mb-2">Deno Deploy</h3>
+          <p class="text-dark-400 text-sm mb-4">Static imports work perfectly with bundlers.</p>
+          <div class="code-block text-xs">
+            <pre class="code-content"><span class="keyword">import</span> { <span class="function">staticAutoRouter</span> } <span class="keyword">from</span> <span class="string">'npm:'</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TypeScript Section -->
+  <section id="typescript" class="py-24 border-t border-dark-800">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">TypeScript Support</h2>
+        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
+          Full generic support. Works with your framework's context type.
+        </p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-8">
+        <div class="section-card p-6">
+          <h3 class="font-semibold mb-4">Single Context (Hoa, Koa, Fastify)</h3>
+          <div class="code-block">
+            <pre class="code-content"><span class="keyword">import</span> { <span class="function">createHandler</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
+
+<span class="keyword">type</span> <span class="type">MyContext</span> = {
+  body: <span class="type">any</span>
+  params: <span class="type">Record</span>&lt;<span class="keyword">string</span>, <span class="keyword">string</span>&gt;
+}
+
+<span class="keyword">export default</span> <span class="function">createHandler</span>&lt;<span class="type">MyContext</span>&gt;(
+  <span class="keyword">async</span> (ctx) <span class="operator">=></span> {
+    ctx.body = { success: <span class="keyword">true</span> }  <span class="comment">// ctx is MyContext</span>
+  }
+)</pre>
+          </div>
+        </div>
+
+        <div class="section-card p-6">
+          <h3 class="font-semibold mb-4">Dual Parameter (Express)</h3>
+          <div class="code-block">
+            <pre class="code-content"><span class="keyword">import</span> { <span class="function">createHandler</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
+<span class="keyword">import</span> { <span class="type">Request</span>, <span class="type">Response</span> } <span class="keyword">from</span> <span class="string">'express'</span>
+
+<span class="keyword">export default</span> <span class="function">createHandler</span>&lt;<span class="type">Request</span>, <span class="type">Response</span>&gt;(
+  <span class="keyword">async</span> (req, res) <span class="operator">=></span> {
+    res.json({ success: <span class="keyword">true</span> })  <span class="comment">// req: Request, res: Response</span>
+  }
+)</pre>
           </div>
         </div>
       </div>
@@ -613,7 +1036,6 @@ app.$routes.<span class="function">protectedRoutes</span> <span class="comment">
   </footer>
 
   <script>
-    // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
         e.preventDefault();
@@ -624,12 +1046,7 @@ app.$routes.<span class="function">protectedRoutes</span> <span class="comment">
       });
     });
 
-    // Intersection Observer for scroll animations
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    };
-
+    const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -639,7 +1056,7 @@ app.$routes.<span class="function">protectedRoutes</span> <span class="comment">
       });
     }, observerOptions);
 
-    document.querySelectorAll('.feature-card').forEach(card => {
+    document.querySelectorAll('.feature-card, .section-card').forEach(card => {
       card.style.opacity = '0';
       observer.observe(card);
     });

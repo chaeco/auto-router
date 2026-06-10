@@ -178,3 +178,83 @@ for (const route of app.$routes.all) {
   }
 }
 ```
+
+### 7. 参数校验
+
+auto-router **不提供参数校验** — 所有路由参数都是字符串，需在 handler 内自行校验。
+
+#### 路径参数校验
+
+```typescript
+// controllers/users/[userId]/posts/get-[id].ts
+export default createHandler(async (ctx: any) => {
+  const { userId, id } = ctx.params
+
+  // 1. 检查参数存在
+  if (!userId || !id) {
+    ctx.res.status = 400
+    ctx.res.body = { error: 'Missing required parameters' }
+    return
+  }
+
+  // 2. 类型转换与校验
+  const userIdNum = Number(userId)
+  const postIdNum = Number(id)
+
+  if (isNaN(userIdNum) || isNaN(postIdNum) || userIdNum <= 0 || postIdNum <= 0) {
+    ctx.res.status = 400
+    ctx.res.body = { error: 'Invalid parameter format', details: 'must be positive integers' }
+    return
+  }
+
+  // proceed with userIdNum and postIdNum
+})
+```
+
+#### 请求体校验
+
+```typescript
+// POST /api/users/:userId/posts — 创建帖子
+export default createHandler(async (ctx: any) => {
+  const body = ctx.req?.body ?? {}
+
+  const errors: string[] = []
+  if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
+    errors.push('title is required and must be a non-empty string')
+  }
+  if (body.content !== undefined && typeof body.content !== 'string') {
+    errors.push('content must be a string if provided')
+  }
+
+  if (errors.length > 0) {
+    ctx.res.status = 400
+    ctx.res.body = { error: 'Validation failed', details: errors }
+    return
+  }
+
+  // proceed with body.title
+})
+```
+
+**推荐方案：** 使用 zod / joi 等 schema 库在 handler 入口集中校验：
+
+```typescript
+import { z } from 'zod'
+
+const PostSchema = z.object({
+  title: z.string().min(1).max(200),
+  content: z.string().optional(),
+})
+
+export default createHandler(async (ctx: any) => {
+  const result = PostSchema.safeParse(ctx.req?.body ?? {})
+  if (!result.success) {
+    ctx.res.status = 400
+    ctx.res.body = { error: 'Validation failed', details: result.error.flatten() }
+    return
+  }
+
+  const { title, content } = result.data
+  // proceed...
+})
+```

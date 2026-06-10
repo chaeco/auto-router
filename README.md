@@ -69,6 +69,10 @@ This copies skill files into your project's `.claude/skills/auto-router/` and `.
   - [Multiple calls](#multiple-calls)
   - [No prefix](#no-prefix)
 - [Route Registry](#route-registry)
+- [API Documentation Generation](#api-documentation-generation)
+  - [OpenAPI / Swagger](#openapi--swagger)
+  - [Postman Collection](#postman-collection)
+  - [Tags / Grouping](#tags--grouping)
 - [Type Safety](#type-safety)
 - [Logging](#logging)
 - [Validation Rules](#validation-rules)
@@ -465,6 +469,72 @@ app.use(async (ctx, next) => {
   }
   await next()
 })
+```
+
+---
+
+## API Documentation Generation
+
+`app.$routes.all` provides a complete route manifest ideal for generating OpenAPI specs, Postman collections, or any other API documentation format. Iterate over the registry and map each `RouteInfo` to your target format.
+
+### OpenAPI / Swagger
+
+```typescript
+import { autoRouter } from '@chaeco/auto-router'
+
+app.extend(autoRouter({ dir: './controllers', prefix: '/api' }))
+
+// After app.listen() or await app.ready()
+const spec = {
+  openapi: '3.0.0',
+  info: { title: 'My API', version: '1.0.0' },
+  paths: {},
+}
+
+for (const route of app.$routes.all) {
+  const path = route.path.replace(/:/g, '{').replace(/\{([^}]+)\}/g, '{$1}')
+  if (!spec.paths[path]) spec.paths[path] = {}
+
+  const operation: Record<string, any> = {
+    summary: route.meta?.description ?? route.path,
+    responses: { default: { description: 'Default response' } },
+  }
+  if (route.requiresAuth === true) operation.security = [{ bearerAuth: [] }]
+  if (route.meta?.tags) operation.tags = route.meta.tags
+
+  spec.paths[path][route.method.toLowerCase()] = operation
+}
+```
+
+### Postman Collection
+
+```typescript
+const collection = {
+  info: { name: 'My API', schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' },
+  item: [],
+}
+
+for (const route of app.$routes.all) {
+  collection.item.push({
+    name: route.meta?.description ?? route.path,
+    request: {
+      method: route.method.toUpperCase(),
+      url: { raw: `{{baseUrl}}${route.path}`, path: route.path.split('/').filter(Boolean) },
+      auth: route.requiresAuth ? { type: 'bearer', bearer: [{ key: 'token', value: '{{token}}', type: 'string' }] } : undefined,
+    },
+  })
+}
+```
+
+### Tags / Grouping
+
+Add tags via `createHandler` meta for logical grouping in generated docs:
+
+```typescript
+export default createHandler(
+  async (ctx) => { ctx.body = { users: [] } },
+  { description: 'List all users', tags: ['Users', 'CRUD'] }
+)
 ```
 
 ---

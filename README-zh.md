@@ -69,6 +69,10 @@ npx auto-router-init-skills
   - [多次调用](#多次调用)
   - [无前缀](#无前缀)
 - [路由注册表](#路由注册表)
+- [API 文档生成](#api-文档生成)
+  - [OpenAPI / Swagger](#openapi--swagger)
+  - [Postman Collection](#postman-collection)
+  - [Tags / 分组](#tags--分组)
 - [类型安全](#类型安全)
 - [日志](#日志)
 - [验证规则](#验证规则)
@@ -465,6 +469,72 @@ app.use(async (ctx, next) => {
   }
   await next()
 })
+```
+
+---
+
+## API 文档生成
+
+`app.$routes.all` 提供完整的路由清单，可用于生成 OpenAPI 规范、Postman 集合或其他 API 文档格式。遍历注册表并将每个 `RouteInfo` 映射到目标格式即可。
+
+### OpenAPI / Swagger
+
+```typescript
+import { autoRouter } from '@chaeco/auto-router'
+
+app.extend(autoRouter({ dir: './controllers', prefix: '/api' }))
+
+// app.listen() 后或 await app.ready()
+const spec = {
+  openapi: '3.0.0',
+  info: { title: 'My API', version: '1.0.0' },
+  paths: {},
+}
+
+for (const route of app.$routes.all) {
+  const path = route.path.replace(/:/g, '{').replace(/\{([^}]+)\}/g, '{$1}')
+  if (!spec.paths[path]) spec.paths[path] = {}
+
+  const operation: Record<string, any> = {
+    summary: route.meta?.description ?? route.path,
+    responses: { default: { description: 'Default response' } },
+  }
+  if (route.requiresAuth === true) operation.security = [{ bearerAuth: [] }]
+  if (route.meta?.tags) operation.tags = route.meta.tags
+
+  spec.paths[path][route.method.toLowerCase()] = operation
+}
+```
+
+### Postman Collection
+
+```typescript
+const collection = {
+  info: { name: 'My API', schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' },
+  item: [],
+}
+
+for (const route of app.$routes.all) {
+  collection.item.push({
+    name: route.meta?.description ?? route.path,
+    request: {
+      method: route.method.toUpperCase(),
+      url: { raw: `{{baseUrl}}${route.path}`, path: route.path.split('/').filter(Boolean) },
+      auth: route.requiresAuth ? { type: 'bearer', bearer: [{ key: 'token', value: '{{token}}', type: 'string' }] } : undefined,
+    },
+  })
+}
+```
+
+### Tags / 分组
+
+通过 `createHandler` 的 meta 添加 tags，便于文档分组：
+
+```typescript
+export default createHandler(
+  async (ctx) => { ctx.body = { users: [] } },
+  { description: 'List all users', tags: ['Users', 'CRUD'] }
+)
 ```
 
 ---

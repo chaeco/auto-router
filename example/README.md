@@ -156,3 +156,25 @@ app.extend(
 - 控制是否输出日志
 - 自定义日志回调，集成到自己的日志系统
 - 默认显示路由信息、权限标记等
+
+### 6. API 文档生成
+
+通过 `app.$routes.all` 获取所有路由信息，可生成 OpenAPI、Postman 等文档：
+
+```typescript
+// 在 app.listen() 后执行
+const spec = {
+  openapi: '3.0.0',
+  info: { title: 'My API', version: '1.0.0' },
+  paths: {},
+}
+
+for (const route of app.$routes.all) {
+  const path = route.path.replace(/:/g, '{')
+  if (!spec.paths[path]) spec.paths[path] = {}
+  spec.paths[path][route.method.toLowerCase()] = {
+    summary: route.meta?.description ?? route.path,
+    responses: { default: { description: 'Default response' } },
+  }
+}
+```

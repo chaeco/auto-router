@@ -183,6 +183,10 @@ for (const route of app.$routes.all) {
 
 auto-router **不提供参数校验** — 所有路由参数都是字符串，需在 handler 内自行校验。
 
+实际示例参考：
+- 路径参数校验：`controllers/post-login.ts`
+- 请求体校验：`controllers/users/[userId]/posts/post.ts`
+
 #### 路径参数校验
 
 ```typescript
@@ -236,7 +240,7 @@ export default createHandler(async (ctx: any) => {
 })
 ```
 
-**推荐方案：** 使用 zod / joi 等 schema 库在 handler 入口集中校验：
+#### 推荐：zod schema 校验
 
 ```typescript
 import { z } from 'zod'
@@ -256,5 +260,28 @@ export default createHandler(async (ctx: any) => {
 
   const { title, content } = result.data
   // proceed...
+})
+```
+
+#### 路由参数 zod 校验
+
+```typescript
+import { z } from 'zod'
+
+const ParamsSchema = z.object({
+  userId: z.string().regex(/^\d+$/, 'userId must be numeric'),
+  id: z.string().regex(/^\d+$/, 'id must be numeric'),
+})
+
+export default createHandler(async (ctx: any) => {
+  const paramsResult = ParamsSchema.safeParse(ctx.params)
+  if (!paramsResult.success) {
+    ctx.res.status = 400
+    ctx.res.body = { error: 'Invalid URL parameters', details: paramsResult.error.flatten() }
+    return
+  }
+
+  const { userId, id } = paramsResult.data
+  // userId and id are now strings matching /^\d+$/
 })
 ```

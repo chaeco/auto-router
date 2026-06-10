@@ -155,6 +155,63 @@ Prefix normalization: trailing slash removed unless bare `"/"`.
 7. Print summary
 ```
 
+## API documentation generation
+
+`app.$routes.all` exposes a complete route manifest for generating OpenAPI specs, Postman collections, or other API documentation formats.
+
+### Route manifest structure
+
+```typescript
+interface RouteInfo {
+  method: string          // 'get', 'post', 'put', 'delete', 'patch'
+  path: string            // '/api/users/:id'
+  requiresAuth?: boolean
+  meta?: RouteMeta        // { description?, tags?, [key: string]: any }
+}
+```
+
+### OpenAPI generation pattern
+
+```typescript
+const spec = { openapi: '3.0.0', info: { title: 'API', version: '1.0.0' }, paths: {} }
+
+for (const route of app.$routes.all) {
+  const path = route.path.replace(/:/g, '{')
+  if (!spec.paths[path]) spec.paths[path] = {}
+  spec.paths[path][route.method.toLowerCase()] = {
+    summary: route.meta?.description ?? route.path,
+    responses: { default: { description: 'OK' } },
+    ...(route.requiresAuth ? { security: [{ bearerAuth: [] }] } : {}),
+  }
+}
+```
+
+### Postman collection pattern
+
+```typescript
+const collection = {
+  info: { name: 'API', schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' },
+  item: app.$routes.all.map(route => ({
+    name: route.meta?.description ?? route.path,
+    request: {
+      method: route.method.toUpperCase(),
+      url: { raw: `{{baseUrl}}${route.path}`, path: route.path.split('/').filter(Boolean) },
+    },
+  })),
+}
+```
+
+### Extending with custom metadata
+
+Add `tags`, `operationId`, or other OpenAPI-compatible fields via `createHandler`:
+
+```typescript
+export default createHandler(
+  async (ctx) => { ctx.body = { users: [] } },
+  { description: 'List users', tags: ['Users'], operationId: 'listUsers' }
+)
+```
+
 ## Type reference
 
 ```typescript

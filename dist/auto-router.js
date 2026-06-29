@@ -278,10 +278,13 @@ async function loadRoutes(app, options) {
                 // Validate directory name (only the new segment, not the full absolute path)
                 // 验证目录名（只检查新增的这一段，而非完整绝对路径）
                 validateDirPath(file);
+                // Convert [param] in directory names to :param, e.g. [userId] -> :userId
+                // 转换目录名中的 [param] 为 :param，如 [userId] -> :userId
+                const dirSegment = file.replace(/\[(\w+)\]/g, ':$1');
                 // Recursively scan subdirectory
                 // 递归扫描子目录
                 try {
-                    scanDir(filePath, basePath ? `${basePath}/${file}` : `/${file}`);
+                    scanDir(filePath, basePath ? `${basePath}/${dirSegment}` : `/${dirSegment}`);
                 }
                 catch (err) {
                     // Subdirectory unreadable (permission denied, etc.) — skip it, continue scanning siblings

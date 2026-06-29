@@ -1,7 +1,7 @@
 # @chaeco/auto-router
 
 [![npm version](https://badge.fury.io/js/%40chaeco%2Fauto-router.svg)](https://badge.fury.io/js/%40chaeco%2Fauto-router)
-[![codecov](https://codecov.io/gh/chaeco/auto-router/branch/cf/graph/badge.svg)](https://codecov.io/gh/chaeco/auto-router)
+[![codecov](https://codecov.io/gh/chaeco/auto-router/branch/main/graph/badge.svg)](https://codecov.io/gh/chaeco/auto-router)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
 

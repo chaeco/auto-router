@@ -36,7 +36,7 @@ fullPath  = basePath ? basePath + '/' + routeName : '/' + routeName
 | `get-users.ts` | `""` | `users` | `/users` |
 | `users/get.ts` | `/users` | `""` (method-only) | `/users` |
 | `users/posts/get-[id].ts` | `/users/posts` | `:id` | `/users/posts/:id` |
-| `users/[userId]/get.ts` | `/users/[userId]` | `""` | `/users/:userId` |
+| `users/[userId]/get.ts` | `/users/:userId` | `""` | `/users/:userId` |
 
 ### `-` is always a path separator
 

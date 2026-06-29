@@ -38,12 +38,9 @@ fullPath  = basePath ? basePath + '/' + routeName : '/' + routeName
 | `users/posts/get-[id].ts` | `/users/posts` | `:id` | `/users/posts/:id` |
 | `users/[userId]/get.ts` | `/users/:userId` | `""` | `/users/:userId` |
 
-### `-` is always a path separator
+### `-` is adjacent to `[param]` becomes `/`
 
-The hyphen `-` between route name segments is **always** converted to `/`. There is no escape mechanism. If your API requires a literal `-` in a path (e.g. `/api/user-settings`), use one of:
-
-- A nested directory: `controllers/user-settings/get.ts` — the directory name includes the hyphen literally
-- Manual route registration outside auto-router
+A hyphen `-` is only converted to `/` when it is adjacent to a dynamic parameter. Hyphens within purely static text (e.g. `user-info`, `my-api-v2`) are preserved as-is. There is no escape mechanism needed.
 
 ## Validation rules
 

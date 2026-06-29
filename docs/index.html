@@ -523,21 +523,21 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
       <div class="section-card p-6">
         <h3 class="text-xl font-semibold mb-4">Route Conversion Rules</h3>
         <p class="text-dark-400 mb-4">
-          File names go through three regex passes to convert to a route path. Directory names also convert <code class="text-emerald-400">[param]</code> → <code class="text-dark-300">:param</code> automatically.
+          File names go through three regex passes. Only hyphens <strong>adjacent to dynamic params</strong> become slashes — hyphens within static text (e.g., <code class="text-dark-300">user-info</code>) are preserved as-is.
         </p>
         <div class="code-block">
-          <pre class="code-content"><span class="comment">// Step 1: [param] → :param  (files & directories)</span>
-  <span class="string">[userId]</span>        <span class="operator">→</span>  <span class="string">:userId</span>
+          <pre class="code-content"><span class="comment">// [param] → :param  (files & directories)</span>
+  <span class="string">user-info</span>        <span class="operator">→</span>  <span class="string">user-info</span>    <span class="comment">// static hyphen, unchanged</span>
+  <span class="string">[id]</span>             <span class="operator">→</span>  <span class="string">:id</span>
 
-<span class="comment">// Step 2: -:/ → /:</span>
-  <span class="string">-:</span>             <span class="operator">→</span>  <span class="string">/:</span>
-
-<span class="comment">// Step 3: :param-/ → :param/</span>
-  <span class="string">:userId-</span>         <span class="operator">→</span>  <span class="string">:userId/</span></pre>
+<span class="comment">// -: → /:  &  :param- → :param/</span>
+  <span class="string">[userId]-posts</span>   <span class="operator">→</span>  <span class="string">:userId/posts</span>
+  <span class="string">users-[id]</span>       <span class="operator">→</span>  <span class="string">users/:id</span>
+  <span class="string">[a]-[b]</span>          <span class="operator">→</span>  <span class="string">:a/:b</span></pre>
         </div>
         <div class="mt-4 p-4 bg-dark-800/50 rounded-lg">
           <p class="text-sm text-dark-400">
-            <strong class="text-dark-300">Note:</strong> The <code class="text-dark-300">-</code> character is <strong class="text-dark-300">always</strong> interpreted as a path separator. You cannot express a literal hyphen in a route path via file naming.
+            <strong class="text-dark-300">Rule:</strong> A <code class="text-dark-300">-</code> is only converted to <code class="text-dark-300">/</code> when adjacent to a dynamic parameter. Hyphens within purely static text are preserved. You never need to work around static hyphens.
           </p>
         </div>
       </div>

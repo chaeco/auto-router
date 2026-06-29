@@ -202,13 +202,25 @@ A route like `GET /api/users/:userId/posts/:postId/comments/:commentId` can be e
 
 The file name `routeName` (everything after `method-`) goes through three regex passes:
 
-```
-1. [param]       → :param        (bracket → colon prefix)
-2. -:/           → /:            (dash before colon → slash before colon)
-3. :param-/      → :param/       (colon segment before dash → slash after)
-```
+| Step | Pattern | Replaces | Effect |
+|------|---------|----------|--------|
+| 1 | `[param]` | `:param` | Bracket → colon prefix |
+| 2 | `-:` | `/:` | Dash-before-colon → slash-before-colon |
+| 3 | `:param-` | `:param/` | Colon-segment-before-dash → slash after |
 
-**Important:** The `-` character is **always** interpreted as a path separator. You cannot express a literal hyphen in a route path via file naming. If your route must contain a literal `-` (e.g., `/api/user-settings`), use a directory structure or configure the route manually.
+**How this works in practice:**
+
+| Example `routeName` | Step 1 | Step 2 | Step 3 | Result |
+|---------------------|--------|--------|--------|--------|
+| `users` | `users` | `users` | `users` | `users` (no params, stays as-is) |
+| `user-info` | `user-info` | `user-info` | `user-info` | `user-info` (hyphen in static text, unchanged) |
+| `[id]` | `:id` | `:id` | `:id` | `:id` |
+| `[userId]-posts` | `:userId-posts` | `:userId-posts` | `:userId/posts` | `:userId/posts` |
+| `users-[id]` | `users-:id` | `users/:id` | `users/:id` | `users/:id` |
+| `[a]-[b]` | `:a-:b` | `:a/:b` | `:a/:b` | `:a/:b` |
+| `[org]-settings-[key]` | `:org-settings-:key` | `:org/settings-:key` | `:org/settings/:key` | `:org/settings/:key` |
+
+**Key rule:** A `-` is only converted to `/` when it is adjacent to a dynamic parameter (`:`). Hyphens within purely static text (e.g., `user-info`, `my-api-v2`) are preserved as-is. You do **not** need to work around static hyphens.
 
 ---
 

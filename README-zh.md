@@ -203,13 +203,25 @@ controllers/
 
 文件名中的 `routeName`（`method-` 之后的部分）经过三步正则转换：
 
-```
-1. [param]       → :param        （方括号 → 冒号前缀）
-2. -:/           → /:            （连字符后跟冒号 → 斜杠后跟冒号）
-3. :param-/      → :param/       （冒号段后跟连字符 → 冒号段后跟斜杠）
-```
+| 步骤 | 模式 | 替换为 | 效果 |
+|------|------|--------|------|
+| 1 | `[param]` | `:param` | 方括号 → 冒号前缀 |
+| 2 | `-:` | `/:` | 连字符+冒号 → 斜杠+冒号 |
+| 3 | `:param-` | `:param/` | 冒号段+连字符 → 冒号段+斜杠 |
 
-**重要：** `-` 字符始终被解析为路径分隔符。无法通过文件命名在路由路径中表达字面量 `-`。如果路由必须包含字面量 `-`（如 `/api/user-settings`），请使用目录结构或手动配置路由。
+**实际转换效果：**
+
+| 示例 `routeName` | 第 1 步 | 第 2 步 | 第 3 步 | 结果 |
+|-----------------|---------|---------|---------|------|
+| `users` | `users` | `users` | `users` | `users`（无参数，保持原样） |
+| `user-info` | `user-info` | `user-info` | `user-info` | `user-info`（静态文字中的 `-`，不变） |
+| `[id]` | `:id` | `:id` | `:id` | `:id` |
+| `[userId]-posts` | `:userId-posts` | `:userId-posts` | `:userId/posts` | `:userId/posts` |
+| `users-[id]` | `users-:id` | `users/:id` | `users/:id` | `users/:id` |
+| `[a]-[b]` | `:a-:b` | `:a/:b` | `:a/:b` | `:a/:b` |
+| `[org]-settings-[key]` | `:org-settings-:key` | `:org/settings-:key` | `:org/settings/:key` | `:org/settings/:key` |
+
+**核心规则：** `-` 仅当**紧邻动态参数（`:`）时**才会被转换为 `/`。纯静态文字内部的 `-`（如 `user-info`、`my-api-v2`）保持不变。不需要对静态 `-` 做任何额外处理。
 
 ---
 

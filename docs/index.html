@@ -523,10 +523,10 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
       <div class="section-card p-6">
         <h3 class="text-xl font-semibold mb-4">Route Conversion Rules</h3>
         <p class="text-dark-400 mb-4">
-          The file name goes through three regex passes to convert to a route path:
+          File names go through three regex passes to convert to a route path. Directory names also convert <code class="text-emerald-400">[param]</code> → <code class="text-dark-300">:param</code> automatically.
         </p>
         <div class="code-block">
-          <pre class="code-content"><span class="comment">// Step 1: [param] → :param</span>
+          <pre class="code-content"><span class="comment">// Step 1: [param] → :param  (files & directories)</span>
   <span class="string">[userId]</span>        <span class="operator">→</span>  <span class="string">:userId</span>
 
 <span class="comment">// Step 2: -:/ → /:</span>

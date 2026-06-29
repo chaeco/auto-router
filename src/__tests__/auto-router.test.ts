@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals'
 import { autoRouter } from '../auto-router'
-import { mkdirSync, writeFileSync, rmSync, symlinkSync } from 'fs'
+import { mkdirSync, writeFileSync, rmSync, chmodSync, symlinkSync } from 'fs'
 import { join } from 'path'
 
 describe('autoRouter', () => {
@@ -965,6 +965,41 @@ describe('autoRouter', () => {
     warnSpy.mockRestore()
     logSpy.mockRestore()
     rmSync(symlinkDir, { recursive: true, force: true })
+  })
+
+  it('should warn and continue when a subdirectory cannot be scanned', async () => {
+    const unreadableParent = join(process.cwd(), '__tests__', 'controllers-unreadable-subdir')
+    const badSubDir = join(unreadableParent, 'secret')
+    mkdirSync(badSubDir, { recursive: true })
+    writeFileSync(join(badSubDir, 'get-secret.js'), 'export default async (ctx) => {}')
+    // Create a valid sibling file that should still be registered
+    writeFileSync(join(unreadableParent, 'get-public.js'), 'export default async (ctx) => {}')
+
+    // Make the subdirectory unreadable (remove execute/search permission)
+    try {
+      chmodSync(badSubDir, 0o000)
+    } catch {
+      // Permission change may not work on all platforms (e.g., Windows)
+    }
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => { })
+
+    await autoRouter({ dir: unreadableParent, prefix: '/api' })(mockApp)
+
+    // The valid sibling route should be registered even if the subdir failed
+    if (process.platform !== 'win32') {
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Skip directory'))
+    }
+    expect(mockApp.get).toHaveBeenCalledWith('/api/public', expect.any(Function))
+
+    logSpy.mockRestore()
+    warnSpy.mockRestore()
+
+    // Restore permissions for cleanup
+    try { chmodSync(badSubDir, 0o755) } catch {}
+    rmSync(unreadableParent, { recursive: true, force: true })
   })
 
   it('should silently skip .d.ts files in the controller directory', async () => {

@@ -20,7 +20,6 @@ describe('staticAutoRouter', () => {
         { method: 'get', path: '/api/users', handler },
         { method: 'post', path: '/api/login', handler },
       ],
-      prefix: '/api',
     })
     await router(mockApp)
 

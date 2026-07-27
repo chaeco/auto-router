@@ -5,7 +5,7 @@ coverage/
 example/
 
 # Development files
-jest.config.js
+jest.config.mjs
 tsconfig.json
 
 # Git and editor files

@@ -7,7 +7,7 @@ export interface StaticRoute {
   /** Full route path, e.g. '/api/v1/auth/login'. */
   path: string
   /** Route handler function or createHandler return value. */
-  handler: any
+  handler: unknown
 }
 
 /** staticAutoRouter configuration. */
@@ -155,9 +155,12 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
         routeMeta = handler.meta
         handler = handler.handler
       } else if (typeof handler === 'function') {
-      } else if (typeof handler === 'object' && handler !== null && typeof handler.handler === 'function') {
-        routeMeta = handler.meta
-        handler = handler.handler
+        // handler is a plain function — no op needed
+        // handler 是纯函数 — 无需额外操作
+      } else if (typeof handler === 'object' && handler !== null && typeof (handler as Record<string, unknown>).handler === 'function') {
+        const raw = handler as { handler: Function; meta?: { requiresAuth?: boolean } }
+        routeMeta = raw.meta
+        handler = raw.handler
       } else {
         log('error', `❌ Skip route ${routePath}: invalid handler type (expected function or createHandler result)`)
         continue

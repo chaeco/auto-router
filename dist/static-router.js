@@ -91,10 +91,13 @@ export function staticAutoRouter(options) {
                 handler = handler.handler;
             }
             else if (typeof handler === 'function') {
+                // handler is a plain function — no op needed
+                // handler 是纯函数 — 无需额外操作
             }
             else if (typeof handler === 'object' && handler !== null && typeof handler.handler === 'function') {
-                routeMeta = handler.meta;
-                handler = handler.handler;
+                const raw = handler;
+                routeMeta = raw.meta;
+                handler = raw.handler;
             }
             else {
                 log('error', `❌ Skip route ${routePath}: invalid handler type (expected function or createHandler result)`);

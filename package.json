@@ -13,6 +13,7 @@
   },
   "files": [
     "dist",
+    "!dist/__tests__",
     ".claude/skills/auto-router",
     ".codex/skills/auto-router",
     "scripts/init-skills.js",
@@ -43,11 +44,11 @@
   "author": "iptodays",
   "license": "MIT",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/chaeco/auto-router.git"
+    "url": "git+https://github.com/chaeco/auto-router.git"
   },
   "homepage": "https://github.com/chaeco/auto-router#readme",
   "bugs": {

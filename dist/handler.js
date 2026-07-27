@@ -34,6 +34,7 @@ export function createHandler(handler, meta) {
 export function isRouteConfig(obj) {
     return !!(obj &&
         typeof obj === 'object' &&
+        'handler' in obj &&
         typeof obj.handler === 'function' &&
         // Check if there's $__isRouteConfig mark (set by createHandler)
         // 检查是否有 $__isRouteConfig 标记（由 createHandler 设置）

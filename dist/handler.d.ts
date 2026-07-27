@@ -43,7 +43,7 @@ export interface RouteMeta {
      * Other custom metadata
      * 其他自定义元数据
      */
-    [key: string]: any;
+    [key: string]: unknown;
 }
 /**
  * Route information interface
@@ -112,5 +112,5 @@ export declare function createHandler<TCtx = any, TRes = void>(handler: RouteHan
  * Must be an object returned by createHandler(), not a plain object
  * 必须是 createHandler() 返回的对象，而不是普通对象
  */
-export declare function isRouteConfig(obj: any): obj is RouteConfig;
+export declare function isRouteConfig(obj: unknown): obj is RouteConfig;
 //# sourceMappingURL=handler.d.ts.map

@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from 'fs'
 import { join, resolve } from 'path'
 import { pathToFileURL } from 'url'
-import { isRouteConfig, RouteMeta, type RouteInfo } from './handler.js'
+import { isRouteConfig, type RouteMeta, type RouteInfo } from './handler.js'
 
 /**
  * Auto Router Loading Plugin
@@ -89,6 +89,18 @@ import { isRouteConfig, RouteMeta, type RouteInfo } from './handler.js'
  * 使用方式（推荐）：
  *   app.extend(autoRouter({ dir: './controllers' }))
  */
+
+/** Single auto-router configuration options. */
+export interface AutoRouterOptions {
+  dir?: string
+  prefix?: string | string[]
+  defaultRequiresAuth?: boolean
+  strict?: boolean
+  logging?: boolean
+  forcePublic?: string[]
+  forceProtected?: string[]
+  onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
+}
 
 /** Valid HTTP methods (uppercase) used for method-prefix pattern parsing */
 // 用于方法前缀规则解析的有效 HTTP 方法列表（大写）
@@ -308,11 +320,11 @@ async function loadRoutes(
       let stat: ReturnType<typeof statSync>
       try {
         stat = statSync(filePath)
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Broken symlink, race-condition deletion, permission denied, etc.
         // 断开的符号链接、竞态删除、权限拒绝等
         log('warn', `⚠️  Skip entry (stat failed): ${filePath}`)
-        log('warn', `   ⚠️  ${err.message}`)
+        log('warn', `   ⚠️  ${err instanceof Error ? err.message : String(err)}`)
         continue
       }
 
@@ -327,11 +339,11 @@ async function loadRoutes(
         // 递归扫描子目录
         try {
           scanDir(filePath, basePath ? `${basePath}/${dirSegment}` : `/${dirSegment}`)
-        } catch (err: any) {
+        } catch (err: unknown) {
           // Subdirectory unreadable (permission denied, etc.) — skip it, continue scanning siblings
           // 子目录不可读（权限拒绝等）—跳过，继续扫描同级其他文件
           log('warn', `⚠️  Skip directory (scan failed): ${filePath}`)
-          log('warn', `   ⚠️  ${err.message}`)
+          log('warn', `   ⚠️  ${err instanceof Error ? err.message : String(err)}`)
         }
       } else if ((file.endsWith('.ts') && !file.endsWith('.d.ts')) || file.endsWith('.js')) {
         // Validate filename
@@ -594,10 +606,10 @@ async function loadRoutes(
 
             app[method](routePath, handler)
           })
-          .catch(err => {
+          .catch((err: unknown) => {
             log('error', `❌ Failed to load route: ${filePath}`)
             // 加载路由失败: ${filePath}
-            log('error', `   ❌ ${err.message}`)
+            log('error', `   ❌ ${err instanceof Error ? err.message : String(err)}`)
           })
 
         importPromises.push(importPromise)
@@ -610,11 +622,11 @@ async function loadRoutes(
   const fullDir = resolve(dir)
   try {
     scanDir(fullDir)
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Directory does not exist or is not readable
     // 目录不存在或无法读取
     log('error', `❌ Failed to scan directory: ${fullDir}`)
-    log('error', `   ❌ ${err.message}`)
+    log('error', `   ❌ ${err instanceof Error ? err.message : String(err)}`)
     return
   }
 
@@ -778,27 +790,7 @@ async function loadRoutes(
  *   app.extend(autoRouter({ dir: './controllers', logging: false }))
  */
 export function autoRouter(
-  options:
-    | {
-      dir?: string
-      prefix?: string | string[]
-      defaultRequiresAuth?: boolean
-      strict?: boolean
-      logging?: boolean
-      forcePublic?: string[]
-      forceProtected?: string[]
-      onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
-    }
-    | Array<{
-      dir?: string
-      prefix?: string | string[]
-      defaultRequiresAuth?: boolean
-      strict?: boolean
-      logging?: boolean
-      forcePublic?: string[]
-      forceProtected?: string[]
-      onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
-    }> = {}
+  options: AutoRouterOptions | AutoRouterOptions[] = {}
 ): (app: any) => Promise<void> {
   // Convert to array for unified processing
   // 转换为数组以统一处理

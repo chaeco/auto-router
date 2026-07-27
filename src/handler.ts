@@ -47,7 +47,7 @@ export interface RouteMeta {
    * Other custom metadata
    * 其他自定义元数据
    */
-  [key: string]: any
+  [key: string]: unknown
 }
 
 /**
@@ -110,7 +110,7 @@ export interface RouteConfig<TCtx = any, TRes = void> {
  */
 
 export function createHandler<TCtx = any, TRes = void>(handler: RouteHandler<TCtx, TRes>, meta?: RouteMeta): RouteConfig<TCtx, TRes> {
-  const config: any = {
+  const config: RouteConfig<TCtx, TRes> & { $__isRouteConfig: boolean } = {
     handler,
     // Normalize empty object {} to undefined so callers can safely use `if (config.meta)`
     // 将空对象 {} 归一化为 undefined，使调用方可以安全地用 `if (config.meta)` 判断
@@ -127,13 +127,14 @@ export function createHandler<TCtx = any, TRes = void>(handler: RouteHandler<TCt
  * Must be an object returned by createHandler(), not a plain object
  * 必须是 createHandler() 返回的对象，而不是普通对象
  */
-export function isRouteConfig(obj: any): obj is RouteConfig {
+export function isRouteConfig(obj: unknown): obj is RouteConfig {
   return !!(
     obj &&
     typeof obj === 'object' &&
-    typeof obj.handler === 'function' &&
+    'handler' in obj &&
+    typeof (obj as Record<string, unknown>).handler === 'function' &&
     // Check if there's $__isRouteConfig mark (set by createHandler)
     // 检查是否有 $__isRouteConfig 标记（由 createHandler 设置）
-    obj.$__isRouteConfig === true
+    (obj as Record<string, unknown>).$__isRouteConfig === true
   )
 }

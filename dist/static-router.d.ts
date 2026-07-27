@@ -5,7 +5,7 @@ export interface StaticRoute {
     /** Full route path, e.g. '/api/v1/auth/login'. */
     path: string;
     /** Route handler function or createHandler return value. */
-    handler: any;
+    handler: unknown;
 }
 /** staticAutoRouter configuration. */
 export interface StaticAutoRouterOptions {

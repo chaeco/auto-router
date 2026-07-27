@@ -1,4 +1,5 @@
 import { isRouteConfig, type RouteInfo } from './handler.js'
+import { matchesFilter } from './matches-filter.js'
 
 /** Static route entry — callers statically import handlers and declare method/path. */
 export interface StaticRoute {
@@ -27,35 +28,6 @@ export interface StaticAutoRouterOptions {
 }
 
 type LogFn = (level: 'info' | 'warn' | 'error', message: string) => void
-
-const HTTP_METHODS_UPPER = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
-
-function matchesFilter(routePath: string, routeMethod: string, pattern: string): boolean {
-  let patternMethod: string | undefined
-  let pathPattern = pattern
-  const spaceIndex = pattern.indexOf(' ')
-
-  if (spaceIndex !== -1) {
-    const maybeMethod = pattern.slice(0, spaceIndex).toUpperCase()
-    if (HTTP_METHODS_UPPER.includes(maybeMethod)) {
-      patternMethod = maybeMethod
-      pathPattern = pattern.slice(spaceIndex + 1)
-    }
-  }
-
-  if (patternMethod && patternMethod !== routeMethod.toUpperCase()) {
-    return false
-  }
-
-  const isWildcard = pathPattern.endsWith('/*')
-  const basePattern = isWildcard ? pathPattern.slice(0, -2) : pathPattern
-
-  if (isWildcard) {
-    return routePath.startsWith(basePattern + '/')
-  }
-
-  return routePath === basePattern
-}
 
 function resolveAuth(options: {
   routePath: string

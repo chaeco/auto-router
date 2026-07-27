@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from 'fs'
 import { join, resolve } from 'path'
 import { pathToFileURL } from 'url'
-import { isRouteConfig, RouteMeta, type RouteInfo } from './handler'
+import { isRouteConfig, RouteMeta, type RouteInfo } from './handler.js'
 
 /**
  * Auto Router Loading Plugin

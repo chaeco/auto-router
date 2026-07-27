@@ -1,4 +1,4 @@
-import { isRouteConfig, type RouteInfo } from './handler'
+import { isRouteConfig, type RouteInfo } from './handler.js'
 
 /** Static route entry — callers statically import handlers and declare method/path. */
 export interface StaticRoute {

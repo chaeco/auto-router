@@ -1,4 +1,4 @@
-import { createHandler, isRouteConfig } from '../handler';
+import { createHandler, isRouteConfig } from '../handler.js';
 describe('createHandler', () => {
     it('should create a RouteConfig with handler and meta', () => {
         const handler = async () => { };

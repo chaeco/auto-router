@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals'
-import { staticAutoRouter } from '../static-router'
-import { createHandler } from '../handler'
+import { staticAutoRouter } from '../static-router.js'
+import { createHandler } from '../handler.js'
 
 describe('staticAutoRouter', () => {
   const handler = async () => {}

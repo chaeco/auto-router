@@ -1,6 +1,6 @@
-export { autoRouter } from './auto-router';
-export { staticAutoRouter } from './static-router';
-export type { RouteHandler, RouteMeta, RouteConfig, RouteInfo, AppRoutesRegistry } from './handler';
-export type { StaticRoute, StaticAutoRouterOptions } from './static-router';
-export { createHandler, isRouteConfig } from './handler';
+export { autoRouter } from './auto-router.js';
+export { staticAutoRouter } from './static-router.js';
+export type { RouteHandler, RouteMeta, RouteConfig, RouteInfo, AppRoutesRegistry } from './handler.js';
+export type { StaticRoute, StaticAutoRouterOptions } from './static-router.js';
+export { createHandler, isRouteConfig } from './handler.js';
 //# sourceMappingURL=index.d.ts.map

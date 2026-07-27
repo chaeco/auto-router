@@ -1,4 +1,4 @@
-import { isRouteConfig } from './handler';
+import { isRouteConfig } from './handler.js';
 const HTTP_METHODS_UPPER = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
 function matchesFilter(routePath, routeMethod, pattern) {
     let patternMethod;

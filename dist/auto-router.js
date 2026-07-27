@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
-import { isRouteConfig } from './handler';
+import { isRouteConfig } from './handler.js';
 /**
  * Auto Router Loading Plugin
  * 自动路由加载插件

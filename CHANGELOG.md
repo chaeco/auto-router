@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.12] - 2026-07-27
+
+### Changed
+
+- **Type safety improvements** — `RouteMeta.[key: string]` from `any` to `unknown`; all `catch` blocks from `err: any` to `err: unknown`; `createHandler` internal config typed instead of `any` bypass; `isRouteConfig` parameter from `any` to `unknown`
+- **CI matrix** — removed Node 16.x (EOL); removed unused `registry-url` from CI workflow; removed redundant build step from release workflow (handled by `prepack`)
+- **`.nvmrc`** — added for local Node version consistency
+
+### Fixed
+
+- **Test files leaked into npm package** — excluded `src/__tests__` from TypeScript compilation, removed `dist/__tests__` from git tracking, added `!dist/__tests__` negation to `files` field
+- **`AutoRouterOptions` type not exported** — extracted inline type to exported `AutoRouterOptions` interface, re-exported from `index.ts`
+- **Stale `.npmignore` reference** — `jest.config.js` → `jest.config.mjs`
+- **`RouteMeta` as value import** — changed to `type`-only import in test file
+
 ## [0.0.11] - 2026-07-27
 
 ### Fixed

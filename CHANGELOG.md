@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.10] - 2026-07-27
+
+### Added
+
+- **`prepack` script** — `npm publish` now automatically rebuilds `dist/` before packaging via `npm run build`
+- **Git pre-commit hook** — `scripts/pre-commit.sh` rebuilds `dist/` and stages it before every commit, ensuring GitHub-imported versions have fresh build output. Run `bash scripts/install-hooks.sh` to install.
+
 ## [0.0.9] - 2026-06-29
 
 ### Fixed

@@ -28,8 +28,7 @@
     "dev": "tsc --watch",
     "prepack": "npm run build",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "prepare": "husky"
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "keywords": [
     "hoa",

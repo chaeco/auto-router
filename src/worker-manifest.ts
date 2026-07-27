@@ -1,0 +1,121 @@
+import { isRouteConfig } from './handler.js'
+
+// ExecutionContext type for Cloudflare Workers — users should install @cloudflare/workers-types
+// If not available, falls back to unknown
+type ExecutionContext = unknown
+
+export interface WorkerRouteContext<TEnv = unknown, TCtx = ExecutionContext> {
+  req: Request
+  env: TEnv
+  ctx: TCtx
+  params: Record<string, string>
+  res: {
+    status: number
+    headers: Record<string, string>
+    body: string | ArrayBuffer | ReadableStream | null
+  }
+}
+
+export interface WorkerManifestRoute<TEnv = unknown, TCtx = ExecutionContext> {
+  /** Express-style path pattern, e.g. '/api/users/:id' */
+  pattern: string
+  /** HTTP method, e.g. 'GET', 'POST' */
+  method: string
+  /** Route handler function or createHandler result */
+  handler: unknown
+}
+
+export interface WorkerRouterOptions<TEnv = unknown, TCtx = ExecutionContext> {
+  routes: WorkerManifestRoute<TEnv, TCtx>[]
+  notFound?: (req: Request, env: TEnv, ctx: TCtx) => Response | Promise<Response>
+  onError?: (err: unknown, req: Request, env: TEnv, ctx: TCtx) => Response | Promise<Response>
+}
+
+type MatchResult = { params: Record<string, string> } | null
+
+function matchRoute(pattern: string, pathname: string): MatchResult {
+  const patternSegs = pattern.split('/').filter(Boolean)
+  const pathSegs = pathname.split('/').filter(Boolean)
+
+  if (patternSegs.length !== pathSegs.length) return null
+
+  const params: Record<string, string> = {}
+  for (let i = 0; i < patternSegs.length; i++) {
+    const ps = patternSegs[i]
+    const vs = pathSegs[i]
+    if (ps.startsWith(':')) {
+      params[ps.slice(1)] = decodeURIComponent(vs)
+    } else if (ps !== vs) {
+      return null
+    }
+  }
+  return { params }
+}
+
+export function createWorkerRouter<TEnv = unknown, TCtx = ExecutionContext>(
+  options: WorkerRouterOptions<TEnv, TCtx>
+): { fetch: (req: Request, env: TEnv, ctx: TCtx) => Promise<Response> } {
+  const { routes, notFound, onError } = options
+
+  // Unwrap createHandler results once at construction time
+  const resolved = routes.map(route => {
+    let handler = route.handler
+    if (isRouteConfig(handler)) {
+      handler = handler.handler
+    }
+    return { pattern: route.pattern, method: route.method.toUpperCase(), handler }
+  })
+
+  return {
+    async fetch(req: Request, env: TEnv, ctx: TCtx): Promise<Response> {
+      const url = new URL(req.url)
+      const pathname = url.pathname
+
+      let matched: { handler: unknown; params: Record<string, string> } | null = null
+      for (const route of resolved) {
+        if (route.method !== req.method.toUpperCase()) continue
+        const result = matchRoute(route.pattern, pathname)
+        if (result) {
+          matched = { handler: route.handler, params: result.params }
+          break
+        }
+      }
+
+      if (!matched) {
+        if (notFound) return notFound(req, env, ctx)
+        return new Response('Not Found', { status: 404 })
+      }
+
+      const routeCtx: WorkerRouteContext<TEnv, TCtx> = {
+        req,
+        env,
+        ctx,
+        params: matched.params,
+        res: { status: 200, headers: {}, body: null },
+      }
+
+      let result: unknown
+      try {
+        result = await (matched.handler as (ctx: WorkerRouteContext<TEnv, TCtx>) => unknown)(routeCtx)
+      } catch (err) {
+        if (onError) return onError(err, req, env, ctx)
+        return new Response('Internal Server Error', { status: 500 })
+      }
+
+      // Response serialization precedence
+      if (result instanceof Response) return result
+
+      if (result !== undefined && result !== null) {
+        return new Response(JSON.stringify(result), {
+          status: routeCtx.res.status,
+          headers: { 'Content-Type': 'application/json', ...routeCtx.res.headers },
+        })
+      }
+
+      return new Response(routeCtx.res.body, {
+        status: routeCtx.res.status,
+        headers: routeCtx.res.headers,
+      })
+    },
+  }
+}

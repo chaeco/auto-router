@@ -3,6 +3,7 @@ import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import { isRouteConfig } from './handler.js';
 import { matchesFilter } from './matches-filter.js';
+import { parseRouteName, parseDirSegment } from './parse-route.js';
 // Helper function for logging
 // 日志输出辅助函数
 function createLogger(onLog, logging) {
@@ -135,7 +136,7 @@ export async function loadRoutes(app, options) {
                 validateDirPath(file);
                 // Convert [param] in directory names to :param, e.g. [userId] -> :userId
                 // 转换目录名中的 [param] 为 :param，如 [userId] -> :userId
-                const dirSegment = file.replace(/\[(\w+)\]/g, ':$1');
+                const dirSegment = parseDirSegment(file);
                 // Recursively scan subdirectory
                 // 递归扫描子目录
                 try {
@@ -171,18 +172,7 @@ export async function loadRoutes(app, options) {
                 }
                 // Process dynamic parameters [id] -> :id, and -[param] -> /:param
                 // 处理动态参数 [id] -> :id，以及 -[param] -> /:param
-                // Examples:
-                // 例如：
-                // - [id] -> :id
-                // - [userId]-[postId] -> :userId/:postId
-                // - [userId]-posts -> :userId/posts
-                routeName = routeName
-                    .replace(/\[(\w+)\]/g, ':$1') // [param] -> :param
-                    // [param] -> :param
-                    .replace(/-:/g, '/:') // -: -> /: (handle parameter connectors)
-                    .replace(/:(\w+)-/g, ':$1/'); // :- -> :/ (handle parameter suffixes)
-                // -: -> /:（处理参数之间的连接符）
-                // :- -> :/（处理参数后的连接符）
+                routeName = parseRouteName(routeName);
                 // Build full route path
                 // 构建完整路由路径
                 let fullPath;

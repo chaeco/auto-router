@@ -9,6 +9,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./worker-manifest": {
+      "import": "./dist/worker-manifest.js",
+      "types": "./dist/worker-manifest.d.ts"
     }
   },
   "files": [
@@ -22,7 +26,8 @@
     "README-zh.md"
   ],
   "bin": {
-    "auto-router-init-skills": "scripts/init-skills.js"
+    "auto-router-init-skills": "scripts/init-skills.js",
+    "auto-router-build-manifest": "dist/build-worker-manifest.js"
   },
   "scripts": {
     "build": "rm -rf dist && tsc",

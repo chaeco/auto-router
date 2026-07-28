@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.13] - 2026-07-28
+
+### Added
+
+- **Cloudflare Workers support** — build-time manifest generation CLI + zero-dependency `createWorkerRouter`
+  - `createWorkerRouter<TEnv, TCtx>(options)` — Web Platform `fetch(req, env, ctx)` router for Workers
+  - `WorkerRouteContext<TEnv, TCtx>` — single-context handler signature with `req`, `env`, `ctx`, `params`, and `res` builder
+  - `WorkerManifestRoute` interface — `{ pattern, method, handler }` for generated manifests
+  - CLI: `npx auto-router-build-manifest <controllersDir> <outputFile> [--prefix /api] [--ext ts]`
+  - Build-time directory scanning with `parseRouteName` / `parseDirSegment` shared logic
+  - Response serialization precedence: direct `Response` > auto-JSON > `ctx.res` builder
+  - `createHandler` unwrapping via `isRouteConfig` (Workers handlers can use same wrapper as Node handlers)
+  - Subpath export: `@chaeco/auto-router/worker-manifest`
+  - npm bin entry: `auto-router-build-manifest` → `dist/build-worker-manifest.js`
+- **`src/parse-route.ts`** — extracted shared route-name parsing logic (previously inline in `load-routes.ts`)
+  - `parseRouteName(rawName)` — three-step regex transform: `[param]` → `:param`, `-:` → `/:`, `:param-` → `:param/`
+  - `parseDirSegment(segment)` — bracket-only transform for directory names
+  - Now used by both runtime `autoRouter` (`load-routes.ts`) and build-time CLI (`build-worker-manifest.ts`)
+
+### Changed
+
+- **`src/load-routes.ts`** — replaced inline regex transforms with calls to `parseRouteName` / `parseDirSegment`
+- **`package.json`** — added `./worker-manifest` subpath export and `auto-router-build-manifest` bin entry
+
+### Tested
+
+- 137 tests passing (21 new tests added for Workers support)
+- **`src/__tests__/parse-route.test.ts`** (16 tests) — all documented conversion rules, step-ordering regression guard
+- **`src/__tests__/worker-router.test.ts`** (18 tests) — route matching, param extraction, method dispatch, 404/500 handlers, response serialization, `createHandler` unwrapping, URI decoding, query strings, trailing slashes, segment count mismatch, custom `TEnv` generics
+- **`src/__tests__/build-worker-manifest.test.ts`** (16 tests) — file name validation, identifier sanitization, relative imports, prefix normalization, empty directory, duplicate detection, sorting, broken symlinks, unreadable subdirectories, `.d.ts` exclusion
+- **`src/__tests__/cli-build-manifest.test.ts`** (10 tests) — CLI argument parsing, usage errors, `--prefix`/`--ext` flags, output directory creation, regenerate command formatting
+- **`src/__tests__/worker-integration.test.ts`** (4 tests) — end-to-end manifest generation → `createWorkerRouter` → real `fetch()` round-trip with nested routes, dynamic segments, custom error handlers
+
 ## [0.0.12] - 2026-07-27
 
 ### Changed

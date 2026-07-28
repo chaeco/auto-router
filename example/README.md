@@ -8,13 +8,28 @@
 example/
 ├── app.ts                   # 基本应用文件
 ├── multi-level-example.ts   # 多层级配置示例
+├── worker-routes.ts         # Cloudflare Workers 生成的清单文件（示例）
 ├── controllers/             # 控制器目录
 │   ├── get-users.ts         # GET /api/users
 │   ├── post-login.ts        # POST /api/login
 │   ├── get-[id].ts          # GET /api/:id
-│   ├── get.ts               # GET /api（仅方法名）
-│   └── admin/
-│       └── get-dashboard.ts # GET /api/admin/dashboard
+│   ├── get-[userId]-[postId].ts  # GET /api/:userId/:postId
+│   ├── get-[userId]-posts.ts     # GET /api/:userId/posts
+│   ├── put-[id].ts          # PUT /api/:id
+│   ├── delete-[id].ts       # DELETE /api/:id
+│   ├── admin/
+│   │   ├── get-dashboard.ts # GET /api/admin/dashboard
+│   │   └── get-users.ts     # GET /api/admin/users
+│   ├── auth/
+│   │   └── post-refresh.ts  # POST /api/auth/refresh
+│   └── users/
+│       └── [userId]/
+│           ├── posts/
+│           │   ├── get.ts           # GET /api/users/:userId/posts
+│           │   ├── post.ts          # POST /api/users/:userId/posts
+│           │   └── get-[id].ts      # GET /api/users/:userId/posts/:id
+│           └── settings/
+│               └── get.ts           # GET /api/users/:userId/settings
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -132,13 +147,14 @@ app.extend(
 ### 1. 基本路由
 
 - 文件名以 HTTP 方法开头：`get-users.ts` → `GET /api/users`
-- 仅方法名：`get.ts` → `GET /api` (新增特性)
+- 嵌套目录：`admin/get-dashboard.ts` → `GET /api/admin/dashboard`
 
 ### 2. 动态参数
 
 - `get-[id].ts` → `GET /api/:id`
 - `get-[userId]-[postId].ts` → `GET /api/:userId/:postId`
-- `get-[id]-resources.ts` → `GET /api/:id/resources`
+- `get-[userId]-posts.ts` → `GET /api/:userId/posts`
+- 动态目录：`users/[userId]/posts/get.ts` → `GET /api/users/:userId/posts`
 
 ### 3. 权限控制
 
@@ -157,27 +173,46 @@ app.extend(
 - 自定义日志回调，集成到自己的日志系统
 - 默认显示路由信息、权限标记等
 
-### 6. API 文档生成
+### 6. Cloudflare Workers 支持
 
-通过 `app.$routes.all` 获取所有路由信息，可生成 OpenAPI、Postman 等文档：
+本示例包含生成的 `worker-routes.ts` 清单文件，展示了如何为 Cloudflare Workers 生成路由配置：
+
+```bash
+# 生成 Workers 清单
+npx auto-router-build-manifest ./controllers ./worker-routes.ts --prefix /api
+```
+
+生成的清单包含 14 个路由，涵盖所有控制器文件：
 
 ```typescript
-// 在 app.listen() 后执行
-const spec = {
-  openapi: '3.0.0',
-  info: { title: 'My API', version: '1.0.0' },
-  paths: {},
-}
+// worker-routes.ts（自动生成）
+import type { WorkerManifestRoute } from '@chaeco/auto-router/worker-manifest'
+import handler_get_users from './controllers/get-users'
+import handler_get_id from './controllers/get-[id]'
+// ... 更多导入
 
-for (const route of app.$routes.all) {
-  const path = route.path.replace(/:/g, '{')
-  if (!spec.paths[path]) spec.paths[path] = {}
-  spec.paths[path][route.method.toLowerCase()] = {
-    summary: route.meta?.description ?? route.path,
-    responses: { default: { description: 'Default response' } },
-  }
+export const routes: WorkerManifestRoute[] = [
+  { pattern: '/api/:id', method: 'DELETE', handler: handler_delete_id },
+  { pattern: '/api/:id', method: 'GET', handler: handler_get_id },
+  { pattern: '/api/:id', method: 'PUT', handler: handler_put_id },
+  // ... 按 pattern 和 method 排序的路由
+]
+```
+
+在 Worker 中使用：
+
+```typescript
+import { createWorkerRouter } from '@chaeco/auto-router/worker-manifest'
+import { routes } from './worker-routes'
+
+const router = createWorkerRouter({ routes })
+
+export default {
+  fetch: router.fetch
 }
 ```
+
+完整 Workers 用法见主 README 的 [Cloudflare Workers](../README.md#cloudflare-workers) 章节。
 
 ### 7. 参数校验
 

@@ -223,4 +223,74 @@ describe('createWorkerRouter', () => {
 
     expect(capturedParams).toEqual({ name: 'John Doe' })
   })
+
+  it('ignores query strings when matching routes', async () => {
+    let called = false
+    const handler = async () => { called = true; return 'OK' }
+    const routes: WorkerManifestRoute[] = [{ pattern: '/api/users', method: 'GET', handler }]
+    const router = createWorkerRouter({ routes })
+
+    const req = new Request('http://localhost/api/users?page=1&limit=10', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    expect(called).toBe(true)
+    expect(await res.json()).toBe('OK')
+  })
+
+  it('handles trailing slashes correctly', async () => {
+    let called = false
+    const handler = async () => { called = true; return 'OK' }
+    const routes: WorkerManifestRoute[] = [{ pattern: '/api/users', method: 'GET', handler }]
+    const router = createWorkerRouter({ routes })
+
+    const req = new Request('http://localhost/api/users/', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    expect(called).toBe(true)
+    expect(await res.json()).toBe('OK')
+  })
+
+  it('rejects routes with segment count mismatch', async () => {
+    const handler = async () => 'OK'
+    const routes: WorkerManifestRoute[] = [{ pattern: '/api/users/:id', method: 'GET', handler }]
+    const router = createWorkerRouter({ routes })
+
+    const req1 = new Request('http://localhost/api/users', { method: 'GET' })
+    const res1 = await router.fetch(req1, {}, {} as ExecutionContext)
+    expect(res1.status).toBe(404)
+
+    const req2 = new Request('http://localhost/api/users/123/extra', { method: 'GET' })
+    const res2 = await router.fetch(req2, {}, {} as ExecutionContext)
+    expect(res2.status).toBe(404)
+  })
+
+  it('works with custom TEnv type', async () => {
+    interface CustomEnv {
+      DATABASE_URL: string
+      KV: { get: (key: string) => Promise<string | null> }
+    }
+
+    let capturedEnv: CustomEnv | null = null
+    const handler = async (ctx: WorkerRouteContext<CustomEnv>) => {
+      capturedEnv = ctx.env
+      return { dbUrl: ctx.env.DATABASE_URL }
+    }
+
+    const routes: WorkerManifestRoute<CustomEnv>[] = [
+      { pattern: '/api/config', method: 'GET', handler }
+    ]
+    const router = createWorkerRouter<CustomEnv>({ routes })
+
+    const mockEnv: CustomEnv = {
+      DATABASE_URL: 'postgres://localhost',
+      KV: { get: async () => null }
+    }
+
+    const req = new Request('http://localhost/api/config', { method: 'GET' })
+    const res = await router.fetch(req, mockEnv, {} as ExecutionContext)
+
+    expect(capturedEnv).toBe(mockEnv)
+    const body = await res.json()
+    expect(body).toEqual({ dbUrl: 'postgres://localhost' })
+  })
 })

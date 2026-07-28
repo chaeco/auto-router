@@ -1,5 +1,5 @@
 import { generateManifest } from '../build-worker-manifest.js'
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'fs'
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync, chmodSync, symlinkSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
@@ -194,5 +194,74 @@ describe('generateManifest', () => {
 
     expect(manifest).toContain('handler_get_users')
     expect(manifest).not.toContain('handler_get_posts')
+  })
+
+  it('skips broken symlinks silently', () => {
+    const controllersDir = join(testDir, 'controllers')
+    const outputFile = join(testDir, 'output', 'routes.ts')
+    mkdirSync(controllersDir, { recursive: true })
+    writeFileSync(join(controllersDir, 'get-valid.ts'), 'export default async (ctx) => {}')
+
+    // Create a broken symlink (pointing to non-existent target)
+    try {
+      symlinkSync('/nonexistent/target/file.ts', join(controllersDir, 'get-broken.ts'))
+    } catch {
+      // If symlink creation fails (e.g., Windows), skip this test
+      return
+    }
+
+    const manifest = generateManifest({ controllersDir, outputFile, prefix: '/api', ext: 'ts' })
+
+    expect(manifest).toContain('handler_get_valid')
+    expect(manifest).not.toContain('handler_get_broken')
+    expect(manifest).toContain("{ pattern: '/api/valid', method: 'GET'")
+  })
+
+  it('skips unreadable subdirectories and continues scanning', () => {
+    if (process.platform === 'win32') {
+      // Permission tests don't work reliably on Windows
+      return
+    }
+
+    const controllersDir = join(testDir, 'controllers')
+    const secretSubDir = join(controllersDir, 'secret')
+    const outputFile = join(testDir, 'output', 'routes.ts')
+
+    mkdirSync(secretSubDir, { recursive: true })
+    writeFileSync(join(secretSubDir, 'get-secret.ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'get-public.ts'), 'export default async (ctx) => {}')
+
+    // Make the subdirectory unreadable
+    try {
+      chmodSync(secretSubDir, 0o000)
+    } catch {
+      return
+    }
+
+    const manifest = generateManifest({ controllersDir, outputFile, prefix: '/api', ext: 'ts' })
+
+    // Public route should be included, secret route should be skipped
+    expect(manifest).toContain('handler_get_public')
+    expect(manifest).not.toContain('handler_secret_get_secret')
+    expect(manifest).toContain("{ pattern: '/api/public', method: 'GET'")
+
+    // Restore permissions for cleanup
+    try { chmodSync(secretSubDir, 0o755) } catch {}
+  })
+
+  it('silently skips .d.ts files', () => {
+    const controllersDir = join(testDir, 'controllers')
+    const outputFile = join(testDir, 'output', 'routes.ts')
+    mkdirSync(controllersDir, { recursive: true })
+    writeFileSync(join(controllersDir, 'get-users.ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'types.d.ts'), 'export type User = { id: string }')
+
+    const manifest = generateManifest({ controllersDir, outputFile, prefix: '/api', ext: 'ts' })
+
+    expect(manifest).toContain('handler_get_users')
+    expect(manifest).not.toContain('types.d.ts')
+    expect(manifest).not.toContain('handler_types')
+    const importCount = (manifest.match(/import handler_/g) || []).length
+    expect(importCount).toBe(1)
   })
 })

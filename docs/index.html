@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,73 +11,104 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
             sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            dark: {
-              50: '#f8fafc',
-              100: '#f1f5f9',
-              200: '#e2e8f0',
-              300: '#cbd5e1',
-              400: '#94a3b8',
-              500: '#64748b',
-              600: '#475569',
-              700: '#334155',
-              800: '#1e293b',
-              850: '#162032',
-              900: '#0f172a',
-              950: '#020617',
-            },
-            emerald: {
-              400: '#34d399',
-              500: '#10b981',
-              600: '#059669',
-            }
           }
         }
       }
     }
   </script>
   <style>
+    :root {
+      /* Light theme colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #64748b;
+      --border-color: #e2e8f0;
+      --border-hover: #10b981;
+      --code-bg: #f1f5f9;
+      --code-border: #cbd5e1;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --hero-glow: rgba(16, 185, 129, 0.1);
+      --nav-bg: rgba(255, 255, 255, 0.8);
+    }
+
+    [data-theme="dark"] {
+      /* Dark theme colors */
+      --bg-primary: #020617;
+      --bg-secondary: #0f172a;
+      --bg-tertiary: #1e293b;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-tertiary: #94a3b8;
+      --border-color: #334155;
+      --border-hover: #10b981;
+      --code-bg: #0f172a;
+      --code-border: #334155;
+      --accent: #10b981;
+      --accent-hover: #34d399;
+      --hero-glow: rgba(16, 185, 129, 0.15);
+      --nav-bg: rgba(2, 6, 23, 0.8);
+    }
+
     html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
     ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 
     .code-block {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      border: 1px solid #334155;
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
       border-radius: 8px;
       overflow: hidden;
+      transition: all 0.3s ease;
     }
+
     .code-header {
-      background: #1e293b;
-      border-bottom: 1px solid #334155;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
       padding: 12px 16px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
+
     .code-dot { width: 12px; height: 12px; border-radius: 50%; }
+
     .code-content {
       padding: 16px;
       overflow-x: auto;
       font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
       line-height: 1.7;
-      color: #e2e8f0;
+      color: var(--text-secondary);
     }
+
+    [data-theme="dark"] .code-content { color: #e2e8f0; }
+
     .keyword { color: #c084fc; }
     .string { color: #34d399; }
-    .comment { color: #64748b; }
+    .comment { color: var(--text-tertiary); }
     .function { color: #60a5fa; }
     .operator { color: #f472b6; }
     .type { color: #fbbf24; }
+
     .hero-glow {
       position: absolute;
       top: 50%;
@@ -85,73 +116,117 @@
       transform: translate(-50%, -50%);
       width: 600px;
       height: 600px;
-      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, var(--hero-glow) 0%, transparent 70%);
       pointer-events: none;
       filter: blur(60px);
     }
-    .feature-card {
+
+    .feature-card, .section-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
       transition: all 0.3s ease;
-      border: 1px solid #334155;
     }
+
     .feature-card:hover {
-      border-color: #10b981;
+      border-color: var(--border-hover);
       transform: translateY(-2px);
     }
-    .file-tree { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
-    .file-tree .dir { color: #60a5fa; }
-    .file-tree .file { color: #34d399; }
-    .file-tree .route { color: #f59e0b; }
-    .file-tree .comment { color: #64748b; }
+
+    .nav-bg {
+      background: var(--nav-bg);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .btn-theme, .btn-lang {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-theme:hover, .btn-lang:hover {
+      border-color: var(--accent);
+      background: var(--bg-secondary);
+    }
+
+    [data-lang="zh"] .lang-en { display: none; }
+    [data-lang="en"] .lang-zh { display: none; }
+
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
     .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
     .delay-100 { animation-delay: 0.1s; }
     .delay-200 { animation-delay: 0.2s; }
     .delay-300 { animation-delay: 0.3s; }
     .delay-400 { animation-delay: 0.4s; }
-    .delay-500 { animation-delay: 0.5s; }
-    .section-card {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      border: 1px solid #334155;
-      border-radius: 12px;
-    }
-    .param-badge {
-      background: #1e293b;
-      border: 1px solid #475569;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-    }
   </style>
 </head>
-<body class="bg-dark-950 text-dark-100 font-sans antialiased">
+<body class="font-sans antialiased" data-lang="en">
 
   <!-- Navigation -->
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-dark-950/80 backdrop-blur-lg border-b border-dark-800">
+  <nav class="fixed top-0 left-0 right-0 z-50 nav-bg">
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
       <a href="#" class="flex items-center gap-3">
-        <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--accent);">
           <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
           </svg>
         </div>
         <span class="font-semibold text-lg">@chaeco/auto-router</span>
       </a>
+
       <div class="flex items-center gap-6">
-        <a href="#features" class="text-dark-300 hover:text-white transition-colors text-sm">Features</a>
-        <a href="#quick-start" class="text-dark-300 hover:text-white transition-colors text-sm">Quick Start</a>
-        <a href="#file-naming" class="text-dark-300 hover:text-white transition-colors text-sm">File Naming</a>
-        <a href="#auth" class="text-dark-300 hover:text-white transition-colors text-sm">Auth</a>
-        <a href="#api" class="text-dark-300 hover:text-white transition-colors text-sm">API</a>
-        <a href="https://github.com/chaeco/auto-router" target="_blank" class="text-dark-300 hover:text-white transition-colors">
+        <a href="#features" class="text-sm transition-colors lang-en" style="color: var(--text-secondary);">Features</a>
+        <a href="#features" class="text-sm transition-colors lang-zh" style="color: var(--text-secondary);">特性</a>
+
+        <a href="#quick-start" class="text-sm transition-colors lang-en" style="color: var(--text-secondary);">Quick Start</a>
+        <a href="#quick-start" class="text-sm transition-colors lang-zh" style="color: var(--text-secondary);">快速开始</a>
+
+        <a href="#file-naming" class="text-sm transition-colors lang-en" style="color: var(--text-secondary);">File Naming</a>
+        <a href="#file-naming" class="text-sm transition-colors lang-zh" style="color: var(--text-secondary);">文件命名</a>
+
+        <a href="#exports" class="text-sm transition-colors lang-en" style="color: var(--text-secondary);">Export</a>
+        <a href="#exports" class="text-sm transition-colors lang-zh" style="color: var(--text-secondary);">导出</a>
+
+        <a href="#auth" class="text-sm transition-colors lang-en" style="color: var(--text-secondary);">Auth</a>
+        <a href="#auth" class="text-sm transition-colors lang-zh" style="color: var(--text-secondary);">权限</a>
+
+        <a href="#api" class="text-sm transition-colors lang-en" style="color: var(--text-secondary);">API</a>
+        <a href="#api" class="text-sm transition-colors lang-zh" style="color: var(--text-secondary);">API</a>
+
+        <!-- Theme Toggle -->
+        <button class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
+          <svg class="w-5 h-5 theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg class="w-5 h-5 theme-icon-moon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+        </button>
+
+        <!-- Language Toggle -->
+        <button class="btn-lang" onclick="toggleLang()" title="Switch language">
+          <span class="text-sm font-medium lang-en">中文</span>
+          <span class="text-sm font-medium lang-zh">EN</span>
+        </button>
+
+        <a href="https://github.com/chaeco/auto-router" target="_blank" class="transition-colors" style="color: var(--text-secondary);">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
           </svg>
         </a>
-        <a href="https://www.npmjs.com/package/@chaeco/auto-router" target="_blank" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+
+        <a href="https://www.npmjs.com/package/@chaeco/auto-router" target="_blank" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white" style="background: var(--accent);">
           npm
         </a>
       </div>
@@ -163,127 +238,161 @@
     <div class="hero-glow"></div>
     <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
       <div class="animate-fade-in-up opacity-0">
-        <div class="inline-flex items-center gap-2 bg-dark-800 border border-dark-600 rounded-full px-4 py-2 mb-8">
-          <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-          <span class="text-sm text-dark-300">v0.0.12 · MIT License</span>
+        <div class="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-8" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
+          <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--accent);"></span>
+          <span class="text-sm" style="color: var(--text-secondary);">v0.0.13 · MIT License</span>
         </div>
       </div>
 
       <h1 class="text-5xl md:text-7xl font-bold mb-6 leading-tight animate-fade-in-up opacity-0 delay-100">
-        <span class="text-white">File-based</span>
+        <span class="lang-en">File-based</span>
+        <span class="lang-zh">基于文件的</span>
         <br>
-        <span class="text-emerald-400">Automatic Router</span>
+        <span style="color: var(--accent);">
+          <span class="lang-en">Automatic Router</span>
+          <span class="lang-zh">自动路由</span>
+        </span>
       </h1>
 
-      <p class="text-xl md:text-2xl text-dark-300 mb-8 max-w-2xl mx-auto animate-fade-in-up opacity-0 delay-200">
-        Map your filesystem to HTTP routes. Zero configuration, full TypeScript support, works with any Node.js framework.
+      <p class="text-xl md:text-2xl mb-8 max-w-2xl mx-auto animate-fade-in-up opacity-0 delay-200" style="color: var(--text-secondary);">
+        <span class="lang-en">Map your filesystem to HTTP routes. Zero configuration, full TypeScript support, works with any Node.js framework.</span>
+        <span class="lang-zh">文件系统映射为 HTTP 路由。零配置，完整的 TypeScript 支持，适用于任何 Node.js 框架。</span>
       </p>
 
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in-up opacity-0 delay-300">
-        <div class="flex items-center bg-dark-800 border border-dark-600 rounded-lg px-4 py-3 font-mono text-sm">
-          <span class="text-dark-400 mr-3">$</span>
-          <span class="text-emerald-400">npm install @chaeco/auto-router</span>
+        <div class="flex items-center rounded-lg px-4 py-3 font-mono text-sm" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
+          <span class="mr-3" style="color: var(--text-tertiary);">$</span>
+          <span style="color: var(--accent);">npm install @chaeco/auto-router</span>
         </div>
-        <a href="https://github.com/chaeco/auto-router" target="_blank" class="flex items-center gap-2 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-lg px-6 py-3 text-sm font-medium transition-colors">
+        <a href="https://github.com/chaeco/auto-router" target="_blank" class="flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
           </svg>
-          View on GitHub
+          <span class="lang-en">View on GitHub</span>
+          <span class="lang-zh">GitHub 仓库</span>
         </a>
       </div>
 
       <!-- Framework badges -->
       <div class="flex flex-wrap items-center justify-center gap-3 animate-fade-in-up opacity-0 delay-400">
-        <span class="text-dark-500 text-sm">Works with:</span>
-        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Hoa</span>
-        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Koa</span>
-        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Express</span>
-        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Fastify</span>
-        <span class="bg-dark-800 px-3 py-1 rounded text-sm text-dark-300">Hono</span>
+        <span class="text-sm lang-en" style="color: var(--text-tertiary);">Works with:</span>
+        <span class="text-sm lang-zh" style="color: var(--text-tertiary);">支持框架：</span>
+        <span class="px-3 py-1 rounded text-sm" style="background: var(--bg-secondary); color: var(--text-secondary);">Hoa</span>
+        <span class="px-3 py-1 rounded text-sm" style="background: var(--bg-secondary); color: var(--text-secondary);">Koa</span>
+        <span class="px-3 py-1 rounded text-sm" style="background: var(--bg-secondary); color: var(--text-secondary);">Express</span>
+        <span class="px-3 py-1 rounded text-sm" style="background: var(--bg-secondary); color: var(--text-secondary);">Fastify</span>
+        <span class="px-3 py-1 rounded text-sm" style="background: var(--bg-secondary); color: var(--text-secondary);">Hono</span>
       </div>
     </div>
   </section>
 
-  <!-- Features Section -->
-  <section id="features" class="py-24 border-t border-dark-800">
+  <!-- Features Section -->  <section id="features" class="py-24" style="border-top: 1px solid var(--border-color);">
     <div class="max-w-6xl mx-auto px-6">
       <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">Everything you need</h2>
-        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
-          Powerful features that make routing effortless. No magic, just sensible defaults.
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+          <span class="lang-en">Everything you need</span>
+          <span class="lang-zh">功能齐全</span>
+        </h2>
+        <p class="text-lg max-w-2xl mx-auto" style="color: var(--text-tertiary);">
+          <span class="lang-en">Powerful features that make routing effortless. No magic, just sensible defaults.</span>
+          <span class="lang-zh">强大的功能让路由变得轻松。没有魔法，只有合理的默认值。</span>
         </p>
       </div>
 
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="feature-card bg-dark-900 rounded-xl p-6">
-          <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="feature-card p-6">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background: rgba(16, 185, 129, 0.1);">
+            <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold mb-2">Zero Configuration</h3>
-          <p class="text-dark-400 text-sm leading-relaxed">
-            Just point to your controllers directory. Routes are automatically discovered from file structure.
+          <h3 class="text-lg font-semibold mb-2">
+            <span class="lang-en">Zero Configuration</span>
+            <span class="lang-zh">零配置</span>
+          </h3>
+          <p class="text-sm leading-relaxed" style="color: var(--text-tertiary);">
+            <span class="lang-en">Just point to your controllers directory. Routes are automatically discovered from file structure.</span>
+            <span class="lang-zh">只需指向控制器目录。路由会自动从文件结构中发现。</span>
           </p>
         </div>
 
-        <div class="feature-card bg-dark-900 rounded-xl p-6">
-          <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="feature-card p-6">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background: rgba(16, 185, 129, 0.1);">
+            <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold mb-2">Nested Directories</h3>
-          <p class="text-dark-400 text-sm leading-relaxed">
-            Build complex route hierarchies with nested folders. Path parameters work in both files and directories.
+          <h3 class="text-lg font-semibold mb-2">
+            <span class="lang-en">Nested Directories</span>
+            <span class="lang-zh">嵌套目录</span>
+          </h3>
+          <p class="text-sm leading-relaxed" style="color: var(--text-tertiary);">
+            <span class="lang-en">Build complex route hierarchies with nested folders. Path parameters work in both files and directories.</span>
+            <span class="lang-zh">使用嵌套文件夹构建复杂的路由层次结构。路径参数在文件和目录中都有效。</span>
           </p>
         </div>
 
-        <div class="feature-card bg-dark-900 rounded-xl p-6">
-          <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="feature-card p-6">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background: rgba(16, 185, 129, 0.1);">
+            <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold mb-2">Auth Metadata</h3>
-          <p class="text-dark-400 text-sm leading-relaxed">
-            Built-in permission system with <code class="text-emerald-400">forcePublic</code> and <code class="text-emerald-400">forceProtected</code> patterns for fine-grained control.
+          <h3 class="text-lg font-semibold mb-2">
+            <span class="lang-en">Auth Metadata</span>
+            <span class="lang-zh">权限元数据</span>
+          </h3>
+          <p class="text-sm leading-relaxed" style="color: var(--text-tertiary);">
+            <span class="lang-en">Built-in permission system with forcePublic and forceProtected patterns for fine-grained control.</span>
+            <span class="lang-zh">内置权限系统，支持 forcePublic 和 forceProtected 模式实现精细控制。</span>
           </p>
         </div>
 
-        <div class="feature-card bg-dark-900 rounded-xl p-6">
-          <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="feature-card p-6">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background: rgba(16, 185, 129, 0.1);">
+            <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold mb-2">TypeScript First</h3>
-          <p class="text-dark-400 text-sm leading-relaxed">
-            Full generic support with <code class="text-emerald-400">RouteHandler&lt;TCtx, TRes&gt;</code>. Works with any framework's context type.
+          <h3 class="text-lg font-semibold mb-2">
+            <span class="lang-en">TypeScript First</span>
+            <span class="lang-zh">TypeScript 优先</span>
+          </h3>
+          <p class="text-sm leading-relaxed" style="color: var(--text-tertiary);">
+            <span class="lang-en">Full generic support with RouteHandler&lt;TCtx, TRes&gt;. Works with any framework's context type.</span>
+            <span class="lang-zh">完整的泛型支持 RouteHandler&lt;TCtx, TRes&gt;。适用于任何框架的上下文类型。</span>
           </p>
         </div>
 
-        <div class="feature-card bg-dark-900 rounded-xl p-6">
-          <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="feature-card p-6">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background: rgba(16, 185, 129, 0.1);">
+            <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold mb-2">Multi-Prefix Support</h3>
-          <p class="text-dark-400 text-sm leading-relaxed">
-            Register the same controllers under multiple prefixes for API versioning or locale-based routing.
+          <h3 class="text-lg font-semibold mb-2">
+            <span class="lang-en">Multi-Prefix Support</span>
+            <span class="lang-zh">多前缀支持</span>
+          </h3>
+          <p class="text-sm leading-relaxed" style="color: var(--text-tertiary);">
+            <span class="lang-en">Register the same controllers under multiple prefixes for API versioning or locale-based routing.</span>
+            <span class="lang-zh">将相同的控制器注册到多个前缀下，支持 API 版本控制或基于区域的路由。</span>
           </p>
         </div>
 
-        <div class="feature-card bg-dark-900 rounded-xl p-6">
-          <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="feature-card p-6">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background: rgba(16, 185, 129, 0.1);">
+            <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold mb-2">Edge Runtime Ready</h3>
-          <p class="text-dark-400 text-sm leading-relaxed">
-            <code class="text-emerald-400">staticAutoRouter</code> for Cloudflare Workers, Deno Deploy, and bundled apps without filesystem access.
+          <h3 class="text-lg font-semibold mb-2">
+            <span class="lang-en">Cloudflare Workers</span>
+            <span class="lang-zh">Cloudflare Workers</span>
+          </h3>
+          <p class="text-sm leading-relaxed" style="color: var(--text-tertiary);">
+            <span class="lang-en">Build-time manifest CLI + zero-dependency createWorkerRouter for native Workers support with fetch(req, env, ctx).</span>
+            <span class="lang-zh">构建时清单 CLI + 零依赖 createWorkerRouter，原生支持 Workers 的 fetch(req, env, ctx)。</span>
           </p>
         </div>
       </div>
@@ -291,79 +400,70 @@
   </section>
 
   <!-- Quick Start Section -->
-  <section id="quick-start" class="py-24 border-t border-dark-800">
+  <section id="quick-start" class="py-24" style="border-top: 1px solid var(--border-color);">
     <div class="max-w-6xl mx-auto px-6">
       <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">Quick Start</h2>
-        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
-          Get started in minutes. Just two steps.
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+          <span class="lang-en">Quick Start</span>
+          <span class="lang-zh">快速开始</span>
+        </h2>
+        <p class="text-lg max-w-2xl mx-auto" style="color: var(--text-tertiary);">
+          <span class="lang-en">Get started in minutes. Just two steps.</span>
+          <span class="lang-zh">几分钟即可开始。只需两步。</span>
         </p>
       </div>
 
       <div class="grid lg:grid-cols-2 gap-8">
-        <!-- Step 1: File Structure -->
+        <!-- Step 1 -->
         <div>
           <div class="flex items-center gap-3 mb-4">
-            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">1</div>
-            <h3 class="text-xl font-semibold">Create your controllers</h3>
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm" style="background: var(--accent);">1</div>
+            <h3 class="text-xl font-semibold">
+              <span class="lang-en">Create your controllers</span>
+              <span class="lang-zh">创建控制器</span>
+            </h3>
           </div>
-          <p class="text-dark-400 mb-6 ml-11">
-            File names define HTTP routes. Use <code class="text-emerald-400">[param]</code> for dynamic segments.
+          <p class="mb-6 ml-11" style="color: var(--text-tertiary);">
+            <span class="lang-en">File names define HTTP routes. Use [param] for dynamic segments.</span>
+            <span class="lang-zh">文件名定义 HTTP 路由。使用 [param] 表示动态参数。</span>
           </p>
 
-          <div class="bg-dark-900 border border-dark-700 rounded-xl p-6">
-            <div class="file-tree space-y-1">
+          <div class="section-card p-6">
+            <div class="font-mono text-sm space-y-1">
               <div class="flex items-center gap-2 mb-3">
-                <span>📁</span><span class="dir">controllers/</span>
+                <span>📁</span><span style="color: #60a5fa;">controllers/</span>
               </div>
               <div class="flex items-center gap-2 ml-6">
-                <span class="file">get-users.ts</span>
-                <span class="text-dark-500">→</span>
-                <span class="route">GET /api/users</span>
+                <span style="color: #34d399;">get-users.ts</span>
+                <span style="color: var(--text-tertiary);">→</span>
+                <span style="color: #f59e0b;">GET /api/users</span>
               </div>
               <div class="flex items-center gap-2 ml-6">
-                <span class="file">get-[id].ts</span>
-                <span class="text-dark-500">→</span>
-                <span class="route">GET /api/:id</span>
+                <span style="color: #34d399;">get-[id].ts</span>
+                <span style="color: var(--text-tertiary);">→</span>
+                <span style="color: #f59e0b;">GET /api/:id</span>
               </div>
               <div class="flex items-center gap-2 ml-6">
-                <span class="file">post-login.ts</span>
-                <span class="text-dark-500">→</span>
-                <span class="route">POST /api/login</span>
-              </div>
-              <div class="flex items-center gap-2 ml-6">
-                <span class="file">get-[userId]-posts.ts</span>
-                <span class="text-dark-500">→</span>
-                <span class="route">GET /api/:userId/posts</span>
-              </div>
-              <div class="flex items-center gap-2 ml-6 mt-4 mb-2">
-                <span>📁</span><span class="dir">users/[userId]/</span>
-              </div>
-              <div class="flex items-center gap-2 ml-12">
-                <span class="file">get.ts</span>
-                <span class="text-dark-500">→</span>
-                <span class="route">GET /api/users/:userId</span>
-              </div>
-              <div class="flex items-center gap-2 ml-12">
-                <span>📁</span><span class="dir">posts/</span>
-              </div>
-              <div class="flex items-center gap-2 ml-18 ml-[3.5rem]">
-                <span class="file">get-[id].ts</span>
-                <span class="text-dark-500">→</span>
-                <span class="route">GET /api/users/:userId/posts/:id</span>
+                <span style="color: #34d399;">post-login.ts</span>
+                <span style="color: var(--text-tertiary);">→</span>
+                <span style="color: #f59e0b;">POST /api/login</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Step 2: Code -->
+        <!-- Step 2 -->
         <div>
           <div class="flex items-center gap-3 mb-4">
-            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">2</div>
-            <h3 class="text-xl font-semibold">Mount the router</h3>
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm" style="background: var(--accent);">2</div>
+            <h3 class="text-xl font-semibold">
+              <span class="lang-en">Mount the router</span>
+              <span class="lang-zh">挂载路由器</span>
+            </h3>
           </div>
-          <p class="text-dark-400 mb-6 ml-11">
-            Just one line to register all routes automatically.
+          <p class="mb-6 ml-11" style="color: var(--text-tertiary);">
+            <span class="lang-en">Just one line to register all routes automatically.</span>
+            <span class="lang-zh">只需一行代码即可自动注册所有路由。</span>
           </p>
 
           <div class="code-block">
@@ -371,7 +471,7 @@
               <div class="code-dot bg-red-500"></div>
               <div class="code-dot bg-yellow-500"></div>
               <div class="code-dot bg-green-500"></div>
-              <span class="text-dark-400 text-sm ml-2">app.ts</span>
+              <span class="text-sm ml-2" style="color: var(--text-tertiary);">app.ts</span>
             </div>
             <pre class="code-content"><span class="keyword">import</span> { autoRouter } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
 
@@ -390,96 +490,108 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
       </div>
     </div>
   </section>
-
   <!-- File Naming Convention -->
-  <section id="file-naming" class="py-24 border-t border-dark-800">
+  <section id="file-naming" class="py-24" style="border-top: 1px solid var(--border-color);">
     <div class="max-w-6xl mx-auto px-6">
       <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">File Naming Convention</h2>
-        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
-          Every route file name encodes the HTTP method and URL structure.
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+          <span class="lang-en">File Naming Convention</span>
+          <span class="lang-zh">文件命名规则</span>
+        </h2>
+        <p class="text-lg max-w-2xl mx-auto" style="color: var(--text-tertiary);">
+          <span class="lang-en">Every route file name encodes the HTTP method and URL structure.</span>
+          <span class="lang-zh">每个路由文件名编码了 HTTP 方法和 URL 结构。</span>
         </p>
       </div>
 
       <!-- Basic Formats -->
       <div class="mb-12">
-        <h3 class="text-xl font-semibold mb-4">Basic Formats</h3>
+        <h3 class="text-xl font-semibold mb-4">
+          <span class="lang-en">Basic Formats</span>
+          <span class="lang-zh">基本格式</span>
+        </h3>
         <div class="section-card p-6 overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="text-left text-dark-400 border-b border-dark-700">
-                <th class="pb-3">File name</th>
-                <th class="pb-3">Registers</th>
+              <tr class="text-left" style="color: var(--text-tertiary); border-bottom: 1px solid var(--border-color);">
+                <th class="pb-3">
+                  <span class="lang-en">File name</span>
+                  <span class="lang-zh">文件名</span>
+                </th>
+                <th class="pb-3">
+                  <span class="lang-en">Registers</span>
+                  <span class="lang-zh">注册为</span>
+                </th>
               </tr>
             </thead>
             <tbody class="font-mono text-sm">
-              <tr class="border-b border-dark-800">
-                <td class="py-3 text-emerald-400">get.ts</td>
-                <td class="py-3 text-dark-300">GET /api (at root directory)</td>
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <td class="py-3" style="color: var(--accent);">get-users.ts</td>
+                <td class="py-3">GET /api/users</td>
               </tr>
-              <tr class="border-b border-dark-800">
-                <td class="py-3 text-emerald-400">get-users.ts</td>
-                <td class="py-3 text-dark-300">GET /api/users</td>
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <td class="py-3" style="color: var(--accent);">post-login.ts</td>
+                <td class="py-3">POST /api/login</td>
               </tr>
-              <tr class="border-b border-dark-800">
-                <td class="py-3 text-emerald-400">post-login.ts</td>
-                <td class="py-3 text-dark-300">POST /api/login</td>
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <td class="py-3" style="color: var(--accent);">get-[id].ts</td>
+                <td class="py-3">GET /api/:id</td>
               </tr>
-              <tr class="border-b border-dark-800">
-                <td class="py-3 text-emerald-400">admin/get.ts</td>
-                <td class="py-3 text-dark-300">GET /api/admin</td>
+              <tr>
+                <td class="py-3" style="color: var(--accent);">admin/get-users.ts</td>
+                <td class="py-3">GET /api/admin/users</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Parameter Syntax -->
+      <!-- Dynamic Parameters -->
       <div class="mb-12">
-        <h3 class="text-xl font-semibold mb-4">Dynamic Parameters</h3>
-        <p class="text-dark-400 mb-4">
-          Wrap parameter names in <code class="text-emerald-400">[brackets]</code>. Each <code class="text-dark-400">-</code> between segments becomes <code class="text-dark-400">/</code> in the URL.
+        <h3 class="text-xl font-semibold mb-4">
+          <span class="lang-en">Dynamic Parameters</span>
+          <span class="lang-zh">动态参数</span>
+        </h3>
+        <p class="mb-4" style="color: var(--text-tertiary);">
+          <span class="lang-en">Wrap parameter names in [brackets]. Each - between segments becomes / in the URL.</span>
+          <span class="lang-zh">用 [方括号] 包裹参数名。段之间的 - 会变成 URL 中的 /。</span>
         </p>
 
         <div class="grid md:grid-cols-2 gap-6">
           <div class="section-card p-6">
-            <h4 class="font-semibold mb-3 text-dark-200">Single Parameter</h4>
+            <h4 class="font-semibold mb-3">
+              <span class="lang-en">Single Parameter</span>
+              <span class="lang-zh">单参数</span>
+            </h4>
             <div class="space-y-3 font-mono text-sm">
               <div class="flex items-center justify-between">
-                <code class="text-emerald-400">get-[id].ts</code>
-                <span class="text-dark-500">→</span>
-                <span class="text-dark-300">GET /api/:id</span>
+                <code style="color: var(--accent);">get-[id].ts</code>
+                <span style="color: var(--text-tertiary);">→</span>
+                <span>GET /api/:id</span>
               </div>
               <div class="flex items-center justify-between">
-                <code class="text-emerald-400">delete-[id].ts</code>
-                <span class="text-dark-500">→</span>
-                <span class="text-dark-300">DELETE /api/:id</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <code class="text-emerald-400">get-[userId].ts</code>
-                <span class="text-dark-500">→</span>
-                <span class="text-dark-300">GET /api/:userId</span>
+                <code style="color: var(--accent);">delete-[id].ts</code>
+                <span style="color: var(--text-tertiary);">→</span>
+                <span>DELETE /api/:id</span>
               </div>
             </div>
           </div>
 
           <div class="section-card p-6">
-            <h4 class="font-semibold mb-3 text-dark-200">Multiple Parameters</h4>
+            <h4 class="font-semibold mb-3">
+              <span class="lang-en">Multiple Parameters</span>
+              <span class="lang-zh">多参数</span>
+            </h4>
             <div class="space-y-3 font-mono text-sm">
               <div class="flex items-center justify-between">
-                <code class="text-emerald-400">get-[userId]-posts.ts</code>
-                <span class="text-dark-500">→</span>
-                <span class="text-dark-300">GET /api/:userId/posts</span>
+                <code style="color: var(--accent);">get-[userId]-posts.ts</code>
+                <span style="color: var(--text-tertiary);">→</span>
+                <span>GET /api/:userId/posts</span>
               </div>
               <div class="flex items-center justify-between">
-                <code class="text-emerald-400">get-[userId]-[postId].ts</code>
-                <span class="text-dark-500">→</span>
-                <span class="text-dark-300">GET /api/:userId/:postId</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <code class="text-emerald-400">get-[a]-[b]-[c].ts</code>
-                <span class="text-dark-500">→</span>
-                <span class="text-dark-300">GET /api/:a/:b/:c</span>
+                <code style="color: var(--accent);">get-[userId]-[postId].ts</code>
+                <span style="color: var(--text-tertiary);">→</span>
+                <span>GET /api/:userId/:postId</span>
               </div>
             </div>
           </div>
@@ -487,198 +599,74 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
       </div>
 
       <!-- Dynamic Directories -->
-      <div class="mb-12">
-        <h3 class="text-xl font-semibold mb-4">Dynamic Directory Names</h3>
-        <p class="text-dark-400 mb-4">
-          Directory names can also contain <code class="text-emerald-400">[param]</code> brackets. Recommended for resource hierarchies with 3+ path segments.
-        </p>
-
-        <div class="section-card p-6 overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-dark-400 border-b border-dark-700">
-                <th class="pb-3">File path</th>
-                <th class="pb-3">Registers</th>
-              </tr>
-            </thead>
-            <tbody class="font-mono text-sm">
-              <tr class="border-b border-dark-800">
-                <td class="py-3 text-emerald-400">users/[userId]/get.ts</td>
-                <td class="py-3 text-dark-300">GET /api/users/:userId</td>
-              </tr>
-              <tr class="border-b border-dark-800">
-                <td class="py-3 text-emerald-400">users/[userId]/posts/get.ts</td>
-                <td class="py-3 text-dark-300">GET /api/users/:userId/posts</td>
-              </tr>
-              <tr class="border-b border-dark-800">
-                <td class="py-3 text-emerald-400">users/[userId]/posts/[id]/get.ts</td>
-                <td class="py-3 text-dark-300">GET /api/users/:userId/posts/:id</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Conversion Rules -->
       <div class="section-card p-6">
-        <h3 class="text-xl font-semibold mb-4">Route Conversion Rules</h3>
-        <p class="text-dark-400 mb-4">
-          File names go through three regex passes. Only hyphens <strong>adjacent to dynamic params</strong> become slashes — hyphens within static text (e.g., <code class="text-dark-300">user-info</code>) are preserved as-is.
-        </p>
-        <div class="code-block">
-          <pre class="code-content"><span class="comment">// [param] → :param  (files & directories)</span>
-  <span class="string">user-info</span>        <span class="operator">→</span>  <span class="string">user-info</span>    <span class="comment">// static hyphen, unchanged</span>
-  <span class="string">[id]</span>             <span class="operator">→</span>  <span class="string">:id</span>
-
-<span class="comment">// -: → /:  &  :param- → :param/</span>
-  <span class="string">[userId]-posts</span>   <span class="operator">→</span>  <span class="string">:userId/posts</span>
-  <span class="string">users-[id]</span>       <span class="operator">→</span>  <span class="string">users/:id</span>
-  <span class="string">[a]-[b]</span>          <span class="operator">→</span>  <span class="string">:a/:b</span></pre>
-        </div>
-        <div class="mt-4 p-4 bg-dark-800/50 rounded-lg">
-          <p class="text-sm text-dark-400">
-            <strong class="text-dark-300">Rule:</strong> A <code class="text-dark-300">-</code> is only converted to <code class="text-dark-300">/</code> when adjacent to a dynamic parameter. Hyphens within purely static text are preserved. You never need to work around static hyphens.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Auth & Permissions -->
-  <section id="auth" class="py-24 border-t border-dark-800">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">Auth & Permissions</h2>
-        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
-          Built-in auth metadata with fine-grained control over route access.
-        </p>
-      </div>
-
-      <div class="grid lg:grid-cols-2 gap-8 mb-12">
-        <!-- Blacklist Mode -->
-        <div class="section-card p-6">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-3 h-3 bg-emerald-500 rounded-full"></span>
-            <h3 class="text-lg font-semibold">Blacklist Mode</h3>
-          </div>
-          <p class="text-dark-400 text-sm mb-4">
-            Public by default. Mark only protected routes.
-          </p>
-          <div class="code-block">
-            <pre class="code-content"><span class="function">autoRouter</span>({
-  <span class="string">dir</span>: <span class="string">'./controllers'</span>,
-  <span class="string">defaultRequiresAuth</span>: <span class="keyword">false</span>,
-})</pre>
-          </div>
-        </div>
-
-        <!-- Whitelist Mode -->
-        <div class="section-card p-6">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-3 h-3 bg-red-500 rounded-full"></span>
-            <h3 class="text-lg font-semibold">Whitelist Mode</h3>
-          </div>
-          <p class="text-dark-400 text-sm mb-4">
-            Protected by default. Mark only public routes.
-          </p>
-          <div class="code-block">
-            <pre class="code-content"><span class="function">autoRouter</span>({
-  <span class="string">dir</span>: <span class="string">'./controllers'</span>,
-  <span class="string">defaultRequiresAuth</span>: <span class="keyword">true</span>,
-})</pre>
-          </div>
-        </div>
-      </div>
-
-      <!-- forcePublic / forceProtected -->
-      <div class="section-card p-6">
-        <h3 class="text-lg font-semibold mb-4">Bulk Auth Overrides</h3>
-        <p class="text-dark-400 text-sm mb-4">
-          Use <code class="text-emerald-400">forcePublic</code> and <code class="text-emerald-400">forceProtected</code> to declare routes that are always public or always protected, independent of the global default.
+        <h3 class="text-xl font-semibold mb-4">
+          <span class="lang-en">Dynamic Directory Names</span>
+          <span class="lang-zh">动态目录名</span>
+        </h3>
+        <p class="mb-4" style="color: var(--text-tertiary);">
+          <span class="lang-en">Directory names can also contain [param] brackets.</span>
+          <span class="lang-zh">目录名也可以包含 [param] 方括号。</span>
         </p>
 
-        <div class="code-block mb-4">
-          <div class="code-header">
-            <span class="text-dark-400 text-sm">auth configuration</span>
-          </div>
-          <pre class="code-content"><span class="function">autoRouter</span>({
-  <span class="string">dir</span>: <span class="string">'./controllers'</span>,
-  <span class="string">prefix</span>: <span class="string">'/api'</span>,
-  <span class="string">defaultRequiresAuth</span>: <span class="keyword">true</span>,      <span class="comment">// whitelist mode</span>
-  <span class="string">forcePublic</span>: [
-    <span class="string">'/api/auth/*'</span>,              <span class="comment">// all auth routes are public</span>
-    <span class="string">'/api/public/*'</span>,           <span class="comment">// public data routes</span>
-  ],
-  <span class="string">forceProtected</span>: [
-    <span class="string">'/api/admin/*'</span>,             <span class="comment">// all admin routes protected</span>
-    <span class="string">'POST /api/users'</span>,         <span class="comment">// only POST /api/users</span>
-  ],
-})</pre>
-        </div>
-
-        <!-- Pattern Formats -->
-        <h4 class="font-semibold mt-6 mb-3">Pattern Formats</h4>
         <div class="overflow-x-auto">
-          <table class="w-full text-sm">
+          <table class="w-full text-sm font-mono">
             <thead>
-              <tr class="text-left text-dark-400 border-b border-dark-700">
-                <th class="pb-3">Format</th>
-                <th class="pb-3">Example</th>
-                <th class="pb-3">Matches</th>
+              <tr class="text-left" style="color: var(--text-tertiary); border-bottom: 1px solid var(--border-color);">
+                <th class="pb-3">
+                  <span class="lang-en">File path</span>
+                  <span class="lang-zh">文件路径</span>
+                </th>
+                <th class="pb-3">
+                  <span class="lang-en">Registers</span>
+                  <span class="lang-zh">注册为</span>
+                </th>
               </tr>
             </thead>
-            <tbody class="text-sm">
-              <tr class="border-b border-dark-800">
-                <td class="py-3 font-mono text-emerald-400">Exact path</td>
-                <td class="py-3 text-dark-300">'/api/users'</td>
-                <td class="py-3 text-dark-400">All methods on /api/users</td>
+            <tbody>
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <td class="py-3" style="color: var(--accent);">users/[userId]/get.ts</td>
+                <td class="py-3">GET /api/users/:userId</td>
               </tr>
-              <tr class="border-b border-dark-800">
-                <td class="py-3 font-mono text-emerald-400">Wildcard</td>
-                <td class="py-3 text-dark-300">'/api/admin/*'</td>
-                <td class="py-3 text-dark-400">Sub-paths under /api/admin/</td>
-              </tr>
-              <tr class="border-b border-dark-800">
-                <td class="py-3 font-mono text-emerald-400">Method + path</td>
-                <td class="py-3 text-dark-300">'POST /api/users'</td>
-                <td class="py-3 text-dark-400">Only POST on /api/users</td>
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <td class="py-3" style="color: var(--accent);">users/[userId]/posts/get.ts</td>
+                <td class="py-3">GET /api/users/:userId/posts</td>
               </tr>
               <tr>
-                <td class="py-3 font-mono text-emerald-400">Method + wildcard</td>
-                <td class="py-3 text-dark-300">'DELETE /api/admin/*'</td>
-                <td class="py-3 text-dark-400">DELETE under /api/admin/</td>
+                <td class="py-3" style="color: var(--accent);">users/[userId]/posts/[id]/get.ts</td>
+                <td class="py-3">GET /api/users/:userId/posts/:id</td>
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <!-- Priority Chain -->
-        <div class="mt-6 p-4 bg-dark-800/50 rounded-lg">
-          <h4 class="font-semibold mb-2">Priority Chain</h4>
-          <p class="text-sm text-dark-400">
-            <code class="text-emerald-400">createHandler meta</code> &gt; <code class="text-emerald-400">forceProtected / forcePublic</code> &gt; <code class="text-emerald-400">defaultRequiresAuth</code>
-          </p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Export Methods -->
-  <section id="exports" class="py-24 border-t border-dark-800">
+  <section id="exports" class="py-24" style="border-top: 1px solid var(--border-color);">
     <div class="max-w-6xl mx-auto px-6">
       <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">Export Methods</h2>
-        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
-          Two ways to export route handlers.
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+          <span class="lang-en">Export Methods</span>
+          <span class="lang-zh">导出方式</span>
+        </h2>
+        <p class="text-lg max-w-2xl mx-auto" style="color: var(--text-tertiary);">
+          <span class="lang-en">Two ways to export route handlers.</span>
+          <span class="lang-zh">两种导出路由处理器的方式。</span>
         </p>
       </div>
 
       <div class="grid lg:grid-cols-2 gap-8">
         <!-- Pure Function -->
         <div class="section-card p-6">
-          <h3 class="text-lg font-semibold mb-4">Method 1: Pure Function</h3>
-          <p class="text-dark-400 text-sm mb-4">
-            Simplest form. Route inherits global <code class="text-dark-300">defaultRequiresAuth</code>.
+          <h3 class="text-lg font-semibold mb-4">
+            <span class="lang-en">Method 1: Pure Function</span>
+            <span class="lang-zh">方式 1：纯函数</span>
+          </h3>
+          <p class="text-sm mb-4" style="color: var(--text-tertiary);">
+            <span class="lang-en">Simplest form. Route inherits global defaultRequiresAuth.</span>
+            <span class="lang-zh">最简单的形式。路由继承全局 defaultRequiresAuth。</span>
           </p>
           <div class="code-block">
             <pre class="code-content"><span class="comment">// controllers/get-users.ts</span>
@@ -690,9 +678,13 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
 
         <!-- createHandler -->
         <div class="section-card p-6">
-          <h3 class="text-lg font-semibold mb-4">Method 2: createHandler</h3>
-          <p class="text-dark-400 text-sm mb-4">
-            Use when you need per-route metadata (auth, description, tags).
+          <h3 class="text-lg font-semibold mb-4">
+            <span class="lang-en">Method 2: createHandler</span>
+            <span class="lang-zh">方式 2：createHandler</span>
+          </h3>
+          <p class="text-sm mb-4" style="color: var(--text-tertiary);">
+            <span class="lang-en">Use when you need per-route metadata (auth, description, tags).</span>
+            <span class="lang-zh">当需要单个路由的元数据（权限、描述、标签）时使用。</span>
           </p>
           <div class="code-block">
             <pre class="code-content"><span class="keyword">import</span> { <span class="function">createHandler</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
@@ -710,305 +702,156 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
           </div>
         </div>
       </div>
+    </div>
+  </section>
 
-      <!-- RouteMeta Fields -->
-      <div class="mt-8 section-card p-6">
-        <h3 class="text-lg font-semibold mb-4">RouteMeta Fields</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-dark-400 border-b border-dark-700">
-                <th class="pb-3">Field</th>
-                <th class="pb-3">Type</th>
-                <th class="pb-3">Description</th>
-              </tr>
-            </thead>
-            <tbody class="text-sm">
-              <tr class="border-b border-dark-800">
-                <td class="py-3 font-mono text-emerald-400">requiresAuth</td>
-                <td class="py-3 text-dark-300">boolean</td>
-                <td class="py-3 text-dark-400">Whether auth is required</td>
-              </tr>
-              <tr class="border-b border-dark-800">
-                <td class="py-3 font-mono text-emerald-400">description</td>
-                <td class="py-3 text-dark-300">string</td>
-                <td class="py-3 text-dark-400">Human-readable description</td>
-              </tr>
-              <tr class="border-b border-dark-800">
-                <td class="py-3 font-mono text-emerald-400">tags</td>
-                <td class="py-3 text-dark-300">string[]</td>
-                <td class="py-3 text-dark-400">For API documentation grouping</td>
-              </tr>
-              <tr>
-                <td class="py-3 font-mono text-emerald-400">[key: string]</td>
-                <td class="py-3 text-dark-300">any</td>
-                <td class="py-3 text-dark-400">Any custom metadata</td>
-              </tr>
-            </tbody>
-          </table>
+  <!-- Auth & Permissions -->
+  <section id="auth" class="py-24" style="border-top: 1px solid var(--border-color);">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+          <span class="lang-en">Auth & Permissions</span>
+          <span class="lang-zh">权限与认证</span>
+        </h2>
+        <p class="text-lg max-w-2xl mx-auto" style="color: var(--text-tertiary);">
+          <span class="lang-en">Built-in auth metadata with fine-grained control over route access.</span>
+          <span class="lang-zh">内置权限元数据，精细控制路由访问。</span>
+        </p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-8 mb-12">
+        <!-- Blacklist Mode -->
+        <div class="section-card p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-3 h-3 rounded-full" style="background: var(--accent);"></span>
+            <h3 class="text-lg font-semibold">
+              <span class="lang-en">Blacklist Mode</span>
+              <span class="lang-zh">黑名单模式</span>
+            </h3>
+          </div>
+          <p class="text-sm mb-4" style="color: var(--text-tertiary);">
+            <span class="lang-en">Public by default. Mark only protected routes.</span>
+            <span class="lang-zh">默认公开。只标记受保护的路由。</span>
+          </p>
+          <div class="code-block">
+            <pre class="code-content"><span class="function">autoRouter</span>({
+  <span class="string">dir</span>: <span class="string">'./controllers'</span>,
+  <span class="string">defaultRequiresAuth</span>: <span class="keyword">false</span>,
+})</pre>
+          </div>
+        </div>
+
+        <!-- Whitelist Mode -->
+        <div class="section-card p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-3 h-3 rounded-full bg-red-500"></span>
+            <h3 class="text-lg font-semibold">
+              <span class="lang-en">Whitelist Mode</span>
+              <span class="lang-zh">白名单模式</span>
+            </h3>
+          </div>
+          <p class="text-sm mb-4" style="color: var(--text-tertiary);">
+            <span class="lang-en">Protected by default. Mark only public routes.</span>
+            <span class="lang-zh">默认受保护。只标记公开的路由。</span>
+          </p>
+          <div class="code-block">
+            <pre class="code-content"><span class="function">autoRouter</span>({
+  <span class="string">dir</span>: <span class="string">'./controllers'</span>,
+  <span class="string">defaultRequiresAuth</span>: <span class="keyword">true</span>,
+})</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- forcePublic / forceProtected -->
+      <div class="section-card p-6">
+        <h3 class="text-lg font-semibold mb-4">
+          <span class="lang-en">Bulk Auth Overrides</span>
+          <span class="lang-zh">批量权限覆盖</span>
+        </h3>
+        <p class="text-sm mb-4" style="color: var(--text-tertiary);">
+          <span class="lang-en">Use forcePublic and forceProtected to declare routes that are always public or always protected.</span>
+          <span class="lang-zh">使用 forcePublic 和 forceProtected 声明始终公开或始终受保护的路由。</span>
+        </p>
+
+        <div class="code-block">
+          <pre class="code-content"><span class="function">autoRouter</span>({
+  <span class="string">dir</span>: <span class="string">'./controllers'</span>,
+  <span class="string">defaultRequiresAuth</span>: <span class="keyword">true</span>,
+  <span class="string">forcePublic</span>: [
+    <span class="string">'/api/auth/*'</span>,        <span class="comment">// all auth routes are public</span>
+    <span class="string">'/api/public/*'</span>,      <span class="comment">// public data routes</span>
+  ],
+  <span class="string">forceProtected</span>: [
+    <span class="string">'/api/admin/*'</span>,       <span class="comment">// all admin routes protected</span>
+    <span class="string">'POST /api/users'</span>,    <span class="comment">// only POST /api/users</span>
+  ],
+})</pre>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- API Reference -->
-  <section id="api" class="py-24 border-t border-dark-800">
+  <!-- API Reference Section -->
+  <section id="api" class="py-24" style="border-top: 1px solid var(--border-color);">
     <div class="max-w-6xl mx-auto px-6">
       <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">API Reference</h2>
-        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
-          Clean, minimal API. Three main exports.
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+          <span class="lang-en">API Reference</span>
+          <span class="lang-zh">API 参考</span>
+        </h2>
+        <p class="text-lg max-w-2xl mx-auto" style="color: var(--text-tertiary);">
+          <span class="lang-en">Clean, minimal API. Three main exports.</span>
+          <span class="lang-zh">简洁的 API。三个主要导出。</span>
         </p>
       </div>
 
       <!-- autoRouter -->
       <div class="section-card overflow-hidden mb-8">
-        <div class="p-6 border-b border-dark-700">
+        <div class="p-6" style="border-bottom: 1px solid var(--border-color);">
           <div class="flex items-center gap-3 flex-wrap">
-            <code class="text-emerald-400 font-mono text-lg">autoRouter(options)</code>
-            <span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-1 rounded">Core</span>
+            <code class="font-mono text-lg" style="color: var(--accent);">autoRouter(options)</code>
+            <span class="text-xs px-2 py-1 rounded" style="background: rgba(16, 185, 129, 0.1); color: var(--accent);">Core</span>
           </div>
-          <p class="text-dark-400 mt-2">
-            Factory function. Returns an async plugin for <code class="text-dark-300">app.extend()</code>.
+          <p class="mt-2" style="color: var(--text-tertiary);">
+            <span class="lang-en">Factory function. Returns an async plugin for app.extend().</span>
+            <span class="lang-zh">工厂函数。返回一个用于 app.extend() 的异步插件。</span>
           </p>
-        </div>
-        <div class="p-6">
-          <h4 class="text-sm font-semibold text-dark-300 mb-4">Options</h4>
-          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            <div>
-              <code class="text-emerald-400 font-mono">dir</code>
-              <span class="text-dark-500 ml-2">string</span>
-              <p class="text-dark-500 text-xs mt-1">Controller directory path</p>
-            </div>
-            <div>
-              <code class="text-emerald-400 font-mono">prefix</code>
-              <span class="text-dark-500 ml-2">string | string[]</span>
-              <p class="text-dark-500 text-xs mt-1">Route prefix</p>
-            </div>
-            <div>
-              <code class="text-emerald-400 font-mono">defaultRequiresAuth</code>
-              <span class="text-dark-500 ml-2">boolean</span>
-              <p class="text-dark-500 text-xs mt-1">Global auth default</p>
-            </div>
-            <div>
-              <code class="text-emerald-400 font-mono">forcePublic</code>
-              <span class="text-dark-500 ml-2">string[]</span>
-              <p class="text-dark-500 text-xs mt-1">Always-public patterns</p>
-            </div>
-            <div>
-              <code class="text-emerald-400 font-mono">forceProtected</code>
-              <span class="text-dark-500 ml-2">string[]</span>
-              <p class="text-dark-500 text-xs mt-1">Always-protected patterns</p>
-            </div>
-            <div>
-              <code class="text-emerald-400 font-mono">strict</code>
-              <span class="text-dark-500 ml-2">boolean</span>
-              <p class="text-dark-500 text-xs mt-1">Strict export validation</p>
-            </div>
-            <div>
-              <code class="text-emerald-400 font-mono">logging</code>
-              <span class="text-dark-500 ml-2">boolean</span>
-              <p class="text-dark-500 text-xs mt-1">Console log output</p>
-            </div>
-            <div>
-              <code class="text-emerald-400 font-mono">onLog</code>
-              <span class="text-dark-500 ml-2">function</span>
-              <p class="text-dark-500 text-xs mt-1">Custom log callback</p>
-            </div>
-          </div>
         </div>
       </div>
 
-      <!-- staticAutoRouter -->
+      <!-- createWorkerRouter -->
       <div class="section-card overflow-hidden mb-8">
-        <div class="p-6 border-b border-dark-700">
+        <div class="p-6" style="border-bottom: 1px solid var(--border-color);">
           <div class="flex items-center gap-3 flex-wrap">
-            <code class="text-emerald-400 font-mono text-lg">staticAutoRouter(options)</code>
-            <span class="bg-blue-500/10 text-blue-400 text-xs px-2 py-1 rounded">Edge</span>
+            <code class="font-mono text-lg" style="color: var(--accent);">createWorkerRouter(options)</code>
+            <span class="text-xs px-2 py-1 rounded" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa;">Workers</span>
           </div>
-          <p class="text-dark-400 mt-2">
-            For runtimes without filesystem access. Accepts statically imported routes.
+          <p class="mt-2" style="color: var(--text-tertiary);">
+            <span class="lang-en">For Cloudflare Workers. Zero-dependency router with fetch(req, env, ctx) signature.</span>
+            <span class="lang-zh">用于 Cloudflare Workers。零依赖路由器，支持 fetch(req, env, ctx) 签名。</span>
           </p>
         </div>
         <div class="p-6">
           <div class="code-block">
-            <pre class="code-content"><span class="keyword">import</span> { <span class="function">staticAutoRouter</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
-<span class="keyword">import</span> getUsers <span class="keyword">from</span> <span class="string">'./controllers/get-users'</span>
+            <pre class="code-content"><span class="keyword">import</span> { <span class="function">createWorkerRouter</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router/worker-manifest'</span>
+<span class="keyword">import</span> { routes } <span class="keyword">from</span> <span class="string">'./worker-routes'</span>
 
-app.<span class="function">extend</span>(
-  <span class="function">staticAutoRouter</span>({
-    <span class="string">routes</span>: [
-      { <span class="string">method</span>: <span class="string">'get'</span>, <span class="string">path</span>: <span class="string">'/api/users'</span>, <span class="string">handler</span>: getUsers },
-    ],
-  })
-)</pre>
+<span class="keyword">const</span> router = <span class="function">createWorkerRouter</span>({ routes })
+
+<span class="keyword">export default</span> { fetch: router.fetch }</pre>
           </div>
         </div>
-      </div>
-
-      <!-- Route Registry -->
-      <div class="section-card overflow-hidden">
-        <div class="p-6 border-b border-dark-700">
-          <div class="flex items-center gap-3 flex-wrap">
-            <code class="text-emerald-400 font-mono text-lg">app.$routes</code>
-            <span class="bg-purple-500/10 text-purple-400 text-xs px-2 py-1 rounded">Registry</span>
-          </div>
-          <p class="text-dark-400 mt-2">
-            Access all registered routes after loading. Perfect for auth middleware and API documentation generation.
-          </p>
-        </div>
-        <div class="p-6">
-          <div class="code-block">
-            <pre class="code-content">app.$routes.<span class="function">all</span>             <span class="comment">// RouteInfo[] — every registered route</span>
-app.$routes.<span class="function">publicRoutes</span>    <span class="comment">// { method, path }[] — public routes</span>
-app.$routes.<span class="function">protectedRoutes</span> <span class="comment">// { method, path }[] — protected routes</span>
-
-<span class="comment">// RouteInfo structure:</span>
-<span class="keyword">interface</span> <span class="type">RouteInfo</span> {
-  <span class="string">method</span>: <span class="type">string</span>
-  <span class="string">path</span>: <span class="type">string</span>
-  <span class="string">requiresAuth</span>?: <span class="type">boolean</span>
-  <span class="string">meta</span>?: <span class="type">RouteMeta</span>
-}</pre>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Frameworks Section -->
-  <section id="frameworks" class="py-24 border-t border-dark-800">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">Works With Your Framework</h2>
-        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
-          Framework-agnostic design. Works with any Node.js framework that supports plugin extension.
-        </p>
-      </div>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="section-card p-6">
-          <h3 class="font-semibold mb-2">Hoa</h3>
-          <p class="text-dark-400 text-sm mb-4">Native plugin system via <code class="text-dark-300">app.extend()</code>.</p>
-          <div class="code-block text-xs">
-            <pre class="code-content">app.<span class="function">extend</span>(<span class="function">autoRouter</span>({...}))</pre>
-          </div>
-        </div>
-
-        <div class="section-card p-6">
-          <h3 class="font-semibold mb-2">Koa / Fastify</h3>
-          <p class="text-dark-400 text-sm mb-4">Via framework-specific adapters or <code class="text-dark-300">use()</code>.</p>
-          <div class="code-block text-xs">
-            <pre class="code-content">app.<span class="function">use</span>(<span class="keyword">await</span> <span class="function">autoRouter</span>({...}))</pre>
-          </div>
-        </div>
-
-        <div class="section-card p-6">
-          <h3 class="font-semibold mb-2">Express</h3>
-          <p class="text-dark-400 text-sm mb-4">Custom wrapper or adapter pattern.</p>
-          <div class="code-block text-xs">
-            <pre class="code-content"><span class="keyword">await</span> <span class="function">autoRouter</span>({...})(expressApp)</pre>
-          </div>
-        </div>
-
-        <div class="section-card p-6">
-          <h3 class="font-semibold mb-2">Hono</h3>
-          <p class="text-dark-400 text-sm mb-4">Recommended for Cloudflare Workers and edge runtimes.</p>
-          <div class="code-block text-xs">
-            <pre class="code-content">app.<span class="function">use</span>(<span class="keyword">await</span> <span class="function">staticAutoRouter</span>({...}))</pre>
-          </div>
-        </div>
-
-        <div class="section-card p-6">
-          <h3 class="font-semibold mb-2">Cloudflare Workers</h3>
-          <p class="text-dark-400 text-sm mb-4">Use <code class="text-dark-300">staticAutoRouter</code> for bundled deployments.</p>
-          <div class="code-block text-xs">
-            <pre class="code-content"><span class="keyword">export default</span> { fetch: router.fetch }</pre>
-          </div>
-        </div>
-
-        <div class="section-card p-6">
-          <h3 class="font-semibold mb-2">Deno Deploy</h3>
-          <p class="text-dark-400 text-sm mb-4">Static imports work perfectly with bundlers.</p>
-          <div class="code-block text-xs">
-            <pre class="code-content"><span class="keyword">import</span> { <span class="function">staticAutoRouter</span> } <span class="keyword">from</span> <span class="string">'npm:'</span></pre>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TypeScript Section -->
-  <section id="typescript" class="py-24 border-t border-dark-800">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">TypeScript Support</h2>
-        <p class="text-dark-400 text-lg max-w-2xl mx-auto">
-          Full generic support. Works with your framework's context type.
-        </p>
-      </div>
-
-      <div class="grid lg:grid-cols-2 gap-8">
-        <div class="section-card p-6">
-          <h3 class="font-semibold mb-4">Single Context (Hoa, Koa, Fastify)</h3>
-          <div class="code-block">
-            <pre class="code-content"><span class="keyword">import</span> { <span class="function">createHandler</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
-
-<span class="keyword">type</span> <span class="type">MyContext</span> = {
-  body: <span class="type">any</span>
-  params: <span class="type">Record</span>&lt;<span class="keyword">string</span>, <span class="keyword">string</span>&gt;
-}
-
-<span class="keyword">export default</span> <span class="function">createHandler</span>&lt;<span class="type">MyContext</span>&gt;(
-  <span class="keyword">async</span> (ctx) <span class="operator">=></span> {
-    ctx.body = { success: <span class="keyword">true</span> }  <span class="comment">// ctx is MyContext</span>
-  }
-)</pre>
-          </div>
-        </div>
-
-        <div class="section-card p-6">
-          <h3 class="font-semibold mb-4">Dual Parameter (Express)</h3>
-          <div class="code-block">
-            <pre class="code-content"><span class="keyword">import</span> { <span class="function">createHandler</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
-<span class="keyword">import</span> { <span class="type">Request</span>, <span class="type">Response</span> } <span class="keyword">from</span> <span class="string">'express'</span>
-
-<span class="keyword">export default</span> <span class="function">createHandler</span>&lt;<span class="type">Request</span>, <span class="type">Response</span>&gt;(
-  <span class="keyword">async</span> (req, res) <span class="operator">=></span> {
-    res.json({ success: <span class="keyword">true</span> })  <span class="comment">// req: Request, res: Response</span>
-  }
-)</pre>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA Section -->
-  <section class="py-24 border-t border-dark-800">
-    <div class="max-w-4xl mx-auto px-6 text-center">
-      <h2 class="text-3xl md:text-4xl font-bold mb-6">Ready to simplify your routing?</h2>
-      <p class="text-dark-400 text-lg mb-8 max-w-2xl mx-auto">
-        Join developers who've already ditched manual route registration.
-      </p>
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <div class="flex items-center bg-dark-800 border border-dark-600 rounded-lg px-4 py-3 font-mono text-sm">
-          <span class="text-dark-400 mr-3">$</span>
-          <span class="text-emerald-400">npm install @chaeco/auto-router</span>
-        </div>
-        <a href="https://github.com/chaeco/auto-router#readme" target="_blank" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-lg font-medium transition-colors">
-          Read the Docs
-        </a>
       </div>
     </div>
   </section>
 
   <!-- Footer -->
-  <footer class="border-t border-dark-800 py-12">
+  <footer class="py-12" style="border-top: 1px solid var(--border-color);">
     <div class="max-w-6xl mx-auto px-6">
       <div class="flex flex-col md:flex-row items-center justify-between gap-6">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--accent);">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
             </svg>
@@ -1017,25 +860,75 @@ app.$routes.<span class="function">protectedRoutes</span> <span class="comment">
         </div>
 
         <div class="flex items-center gap-6">
-          <a href="https://github.com/chaeco/auto-router" target="_blank" class="text-dark-400 hover:text-white transition-colors text-sm">
+          <a href="https://github.com/chaeco/auto-router" target="_blank" class="text-sm transition-colors" style="color: var(--text-tertiary);">
             GitHub
           </a>
-          <a href="https://www.npmjs.com/package/@chaeco/auto-router" target="_blank" class="text-dark-400 hover:text-white transition-colors text-sm">
+          <a href="https://www.npmjs.com/package/@chaeco/auto-router" target="_blank" class="text-sm transition-colors" style="color: var(--text-tertiary);">
             npm
           </a>
-          <a href="https://github.com/chaeco/auto-router/blob/main/LICENSE" target="_blank" class="text-dark-400 hover:text-white transition-colors text-sm">
+          <a href="https://github.com/chaeco/auto-router/blob/main/LICENSE" target="_blank" class="text-sm transition-colors" style="color: var(--text-tertiary);">
             MIT License
           </a>
         </div>
 
-        <p class="text-dark-500 text-sm">
-          Built with ❤️ by <a href="https://github.com/iptodays" target="_blank" class="hover:text-white transition-colors">iptodays</a>
+        <p class="text-sm" style="color: var(--text-tertiary);">
+          <span class="lang-en">Built with ❤️ by</span>
+          <span class="lang-zh">由</span>
+          <a href="https://github.com/iptodays" target="_blank" class="transition-colors" style="color: var(--text-secondary);">iptodays</a>
+          <span class="lang-zh"> 用 ❤️ 构建</span>
         </p>
       </div>
     </div>
   </footer>
 
   <script>
+    // Theme management
+    function initTheme() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+      updateThemeIcon(theme);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      updateThemeIcon(next);
+    }
+
+    function updateThemeIcon(theme) {
+      const sunIcon = document.querySelector('.theme-icon-sun');
+      const moonIcon = document.querySelector('.theme-icon-moon');
+      if (theme === 'dark') {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      } else {
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      }
+    }
+
+    // Language management
+    function initLang() {
+      const saved = localStorage.getItem('lang');
+      const browserLang = navigator.language.toLowerCase();
+      const lang = saved || (browserLang.startsWith('zh') ? 'zh' : 'en');
+      document.body.setAttribute('data-lang', lang);
+      document.documentElement.setAttribute('lang', lang);
+    }
+
+    function toggleLang() {
+      const current = document.body.getAttribute('data-lang');
+      const next = current === 'en' ? 'zh' : 'en';
+      document.body.setAttribute('data-lang', next);
+      document.documentElement.setAttribute('lang', next);
+      localStorage.setItem('lang', next);
+    }
+
+    // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
         e.preventDefault();
@@ -1046,6 +939,7 @@ app.$routes.<span class="function">protectedRoutes</span> <span class="comment">
       });
     });
 
+    // Intersection Observer for animations
     const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -1060,6 +954,19 @@ app.$routes.<span class="function">protectedRoutes</span> <span class="comment">
       card.style.opacity = '0';
       observer.observe(card);
     });
+
+    // System theme change listener
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (!localStorage.getItem('theme')) {
+        const theme = e.matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        updateThemeIcon(theme);
+      }
+    });
+
+    // Initialize on load
+    initTheme();
+    initLang();
   </script>
 
 </body>

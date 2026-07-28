@@ -1,6 +1,6 @@
 {
   "name": "@chaeco/auto-router",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "File-based automatic router plugin for Node.js frameworks (Hoa, Express, Koa, Fastify, etc.)",
   "type": "module",
   "main": "dist/index.js",
@@ -31,8 +31,9 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsc",
+    "build:docs": "node scripts/inject-version.js",
     "dev": "tsc --watch",
-    "prepack": "npm run build",
+    "prepack": "npm run build && npm run build:docs",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },

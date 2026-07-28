@@ -293,4 +293,169 @@ describe('createWorkerRouter', () => {
     const body = await res.json()
     expect(body).toEqual({ dbUrl: 'postgres://localhost' })
   })
+
+  it('rejects non-function handlers with TypeError', async () => {
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/invalid', method: 'GET', handler: 42 as any }
+    ]
+
+    let errorCaptured: unknown = null
+    const onError = (err: unknown) => {
+      errorCaptured = err
+      return new Response('Bad Handler', { status: 500 })
+    }
+
+    const router = createWorkerRouter({ routes, onError })
+
+    const req = new Request('http://localhost/api/invalid', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(500)
+    expect(await res.text()).toBe('Bad Handler')
+    expect(errorCaptured).toBeInstanceOf(TypeError)
+    expect((errorCaptured as Error).message).toContain('not a function')
+    expect((errorCaptured as Error).message).toContain('number')
+  })
+
+  it('uses default 500 when handler is not a function and no onError', async () => {
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/invalid', method: 'GET', handler: 'not a function' as any }
+    ]
+    const router = createWorkerRouter({ routes })
+
+    const req = new Request('http://localhost/api/invalid', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(500)
+    expect(await res.text()).toBe('Internal Server Error')
+  })
+
+  it('handles concurrent requests independently', async () => {
+    let counter = 0
+    const handler = async (ctx: WorkerRouteContext) => {
+      const id = ++counter
+      await new Promise(resolve => setTimeout(resolve, 10))
+      return { requestId: id, params: ctx.params }
+    }
+
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/:id', method: 'GET', handler }
+    ]
+    const router = createWorkerRouter({ routes })
+
+    // Fire 5 concurrent requests
+    const requests = [
+      router.fetch(new Request('http://localhost/api/1', { method: 'GET' }), {}, {} as ExecutionContext),
+      router.fetch(new Request('http://localhost/api/2', { method: 'GET' }), {}, {} as ExecutionContext),
+      router.fetch(new Request('http://localhost/api/3', { method: 'GET' }), {}, {} as ExecutionContext),
+      router.fetch(new Request('http://localhost/api/4', { method: 'GET' }), {}, {} as ExecutionContext),
+      router.fetch(new Request('http://localhost/api/5', { method: 'GET' }), {}, {} as ExecutionContext),
+    ]
+
+    const results = await Promise.all(requests)
+    const bodies = await Promise.all(results.map(r => r.json()))
+
+    // Each request should get its own params and requestId
+    expect(bodies[0]).toEqual({ requestId: 1, params: { id: '1' } })
+    expect(bodies[1]).toEqual({ requestId: 2, params: { id: '2' } })
+    expect(bodies[2]).toEqual({ requestId: 3, params: { id: '3' } })
+    expect(bodies[3]).toEqual({ requestId: 4, params: { id: '4' } })
+    expect(bodies[4]).toEqual({ requestId: 5, params: { id: '5' } })
+  })
+
+  it('handles consecutive slashes by normalizing path segments', async () => {
+    const handler = async () => ({ ok: true })
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/users', method: 'GET', handler }
+    ]
+    const router = createWorkerRouter({ routes })
+
+    // Consecutive slashes are normalized by .split('/').filter(Boolean)
+    const req = new Request('http://localhost/api//users', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+  })
+
+  it('handles non-Error throws in handler', async () => {
+    const handler = async () => {
+      throw 'string error'  // eslint-disable-line no-throw-literal
+    }
+
+    let errorCaptured: unknown = null
+    const onError = (err: unknown) => {
+      errorCaptured = err
+      return new Response('Caught', { status: 500 })
+    }
+
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/throw', method: 'GET', handler }
+    ]
+    const router = createWorkerRouter({ routes, onError })
+
+    const req = new Request('http://localhost/api/throw', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(500)
+    expect(await res.text()).toBe('Caught')
+    expect(errorCaptured).toBe('string error')
+  })
+
+  it('handles null throw in handler', async () => {
+    const handler = async () => {
+      throw null  // eslint-disable-line no-throw-literal
+    }
+
+    let errorCaptured: unknown = null
+    const onError = (err: unknown) => {
+      errorCaptured = err
+      return new Response('Caught null', { status: 500 })
+    }
+
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/throw', method: 'GET', handler }
+    ]
+    const router = createWorkerRouter({ routes, onError })
+
+    const req = new Request('http://localhost/api/throw', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(500)
+    expect(errorCaptured).toBe(null)
+  })
+
+  it('performs efficiently with many routes (stress test)', async () => {
+    // Generate 100 routes
+    const routes: WorkerManifestRoute[] = []
+    for (let i = 0; i < 100; i++) {
+      routes.push({
+        pattern: `/api/route${i}`,
+        method: 'GET',
+        handler: async () => ({ routeId: i })
+      })
+    }
+
+    const router = createWorkerRouter({ routes })
+
+    // Test first, middle, and last route
+    const tests = [
+      { url: 'http://localhost/api/route0', expected: 0 },
+      { url: 'http://localhost/api/route50', expected: 50 },
+      { url: 'http://localhost/api/route99', expected: 99 },
+    ]
+
+    for (const test of tests) {
+      const req = new Request(test.url, { method: 'GET' })
+      const res = await router.fetch(req, {}, {} as ExecutionContext)
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body).toEqual({ routeId: test.expected })
+    }
+
+    // Test 404 for non-existent route
+    const notFoundReq = new Request('http://localhost/api/route999', { method: 'GET' })
+    const notFoundRes = await router.fetch(notFoundReq, {}, {} as ExecutionContext)
+    expect(notFoundRes.status).toBe(404)
+  })
 })

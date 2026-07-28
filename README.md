@@ -898,6 +898,136 @@ export default requireAuth(async (ctx) => {
 
 `staticAutoRouter` is designed for **framework middleware** (Hono, Koa, Express) which use `app.get(path, handler)` registration. Workers use the **`fetch(req, env, ctx)` signature** defined by the Web Platform standard — no middleware stack, no `app` object. `createWorkerRouter` matches this signature and provides zero-dependency routing optimized for Workers' execution model.
 
+#### Performance characteristics
+
+`createWorkerRouter` uses a **linear scan (O(n))** to match routes:
+
+- **Fast for typical Workers apps** — most Workers have 10-50 routes; linear scan adds < 100μs per request
+- **Recommended limit: < 100 routes** — beyond this, consider splitting into multiple Workers or using a trie-based router
+- **No regex compilation overhead** — routes are matched by string comparison, not precompiled regexes
+
+The simple implementation prioritizes:
+- **Zero dependencies** — no router library to bundle
+- **Minimal code size** — ~120 lines, < 1KB minified
+- **Debuggability** — straightforward logic, no hidden complexity
+
+For most Workers use cases, this is the right tradeoff. If you have 100+ routes and measure matching as a bottleneck, consider:
+- Grouping related routes into separate Workers (e.g., `/api/v1/*` vs `/api/v2/*`)
+- Using a prefix-based dispatch before calling `createWorkerRouter`
+- Implementing a custom trie-based matcher (outside this library's scope)
+
+#### Deployment example
+
+Complete Workers project structure:
+
+```
+my-worker/
+├── src/
+│   ├── index.ts              # Worker entry point
+│   ├── worker-routes.ts      # Generated manifest (gitignored or committed)
+│   └── controllers/
+│       ├── get-users.ts
+│       ├── get-[id].ts
+│       └── post-login.ts
+├── wrangler.toml
+├── package.json
+└── tsconfig.json
+```
+
+**wrangler.toml:**
+
+```toml
+name = "my-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[build]
+command = "npm run build"
+
+# Environment variables (secrets via `wrangler secret put`)
+[vars]
+ENVIRONMENT = "production"
+
+# KV, D1, R2 bindings as needed
+[[kv_namespaces]]
+binding = "CACHE"
+id = "your-kv-namespace-id"
+```
+
+**package.json scripts:**
+
+```json
+{
+  "scripts": {
+    "build:routes": "auto-router-build-manifest ./src/controllers ./src/worker-routes.ts --prefix /api",
+    "build": "npm run build:routes && tsc",
+    "dev": "npm run build:routes && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240806.0",
+    "wrangler": "^3.60.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@chaeco/auto-router": "^0.0.13"
+  }
+}
+```
+
+**src/index.ts:**
+
+```typescript
+import { createWorkerRouter } from '@chaeco/auto-router/worker-manifest'
+import { routes } from './worker-routes'
+
+export interface Env {
+  CACHE: KVNamespace
+  DATABASE_URL: string
+}
+
+const router = createWorkerRouter<Env>({
+  routes,
+  notFound: (req) => new Response(`Not Found: ${new URL(req.url).pathname}`, { status: 404 }),
+  onError: (err, req) => {
+    console.error('Request failed:', err)
+    return new Response('Internal Server Error', { status: 500 })
+  }
+})
+
+export default {
+  fetch: router.fetch
+}
+```
+
+**Deployment workflow:**
+
+```bash
+# 1. Generate routes manifest
+npm run build:routes
+
+# 2. Test locally
+npm run dev
+# → http://localhost:8787
+
+# 3. Deploy to production
+npm run deploy
+# → https://my-api.your-subdomain.workers.dev
+```
+
+**Regenerate manifest on file changes:**
+
+Add a `watch` script for development:
+
+```json
+{
+  "scripts": {
+    "watch:routes": "nodemon --watch src/controllers -e ts --exec 'npm run build:routes'",
+    "dev:watch": "concurrently \"npm run watch:routes\" \"wrangler dev\""
+  }
+}
+```
+
 ---
 
 ## API Reference

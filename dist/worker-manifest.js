@@ -55,6 +55,12 @@ export function createWorkerRouter(options) {
             };
             let result;
             try {
+                // Runtime validation: handler must be a function
+                // (generateManifest guarantees this for CLI-generated manifests,
+                // but hand-written manifests or dynamic routes may violate this)
+                if (typeof matched.handler !== 'function') {
+                    throw new TypeError(`Handler for ${req.method} ${pathname} is not a function (got ${typeof matched.handler})`);
+                }
                 result = await matched.handler(routeCtx);
             }
             catch (err) {

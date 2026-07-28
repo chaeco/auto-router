@@ -1004,6 +1004,136 @@ export default requireAuth(async (ctx) => {
 
 `staticAutoRouter` 设计用于**框架中间件**（Hono、Koa、Express），这些框架使用 `app.get(path, handler)` 注册。Workers 使用 Web Platform 标准定义的 **`fetch(req, env, ctx)` 签名**——没有中间件栈，没有 `app` 对象。`createWorkerRouter` 匹配此签名，并提供针对 Workers 执行模型优化的零依赖路由。
 
+#### 性能特征
+
+`createWorkerRouter` 使用**线性扫描 (O(n))** 匹配路由：
+
+- **对典型 Workers 应用足够快** — 大多数 Workers 有 10-50 个路由；线性扫描每个请求增加 < 100μs
+- **推荐上限：< 100 个路由** — 超过此数量，考虑拆分为多个 Workers 或使用基于 trie 的路由器
+- **无正则编译开销** — 路由通过字符串比较匹配，不预编译正则表达式
+
+简单实现优先考虑：
+- **零依赖** — 无需打包路由器库
+- **最小代码体积** — ~120 行，压缩后 < 1KB
+- **可调试性** — 逻辑直观，无隐藏复杂度
+
+对大多数 Workers 用例，这是正确的权衡。如果你有 100+ 路由且测量显示匹配是瓶颈，考虑：
+- 将相关路由分组到独立 Workers（如 `/api/v1/*` vs `/api/v2/*`）
+- 在调用 `createWorkerRouter` 前使用基于前缀的分发
+- 实现自定义基于 trie 的匹配器（超出本库范围）
+
+#### 部署示例
+
+完整 Workers 项目结构：
+
+```
+my-worker/
+├── src/
+│   ├── index.ts              # Worker 入口
+│   ├── worker-routes.ts      # 生成的清单（gitignore 或提交）
+│   └── controllers/
+│       ├── get-users.ts
+│       ├── get-[id].ts
+│       └── post-login.ts
+├── wrangler.toml
+├── package.json
+└── tsconfig.json
+```
+
+**wrangler.toml：**
+
+```toml
+name = "my-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[build]
+command = "npm run build"
+
+# 环境变量（secrets 通过 `wrangler secret put` 设置）
+[vars]
+ENVIRONMENT = "production"
+
+# KV、D1、R2 绑定（按需）
+[[kv_namespaces]]
+binding = "CACHE"
+id = "your-kv-namespace-id"
+```
+
+**package.json scripts：**
+
+```json
+{
+  "scripts": {
+    "build:routes": "auto-router-build-manifest ./src/controllers ./src/worker-routes.ts --prefix /api",
+    "build": "npm run build:routes && tsc",
+    "dev": "npm run build:routes && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240806.0",
+    "wrangler": "^3.60.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@chaeco/auto-router": "^0.0.13"
+  }
+}
+```
+
+**src/index.ts：**
+
+```typescript
+import { createWorkerRouter } from '@chaeco/auto-router/worker-manifest'
+import { routes } from './worker-routes'
+
+export interface Env {
+  CACHE: KVNamespace
+  DATABASE_URL: string
+}
+
+const router = createWorkerRouter<Env>({
+  routes,
+  notFound: (req) => new Response(`Not Found: ${new URL(req.url).pathname}`, { status: 404 }),
+  onError: (err, req) => {
+    console.error('Request failed:', err)
+    return new Response('Internal Server Error', { status: 500 })
+  }
+})
+
+export default {
+  fetch: router.fetch
+}
+```
+
+**部署流程：**
+
+```bash
+# 1. 生成路由清单
+npm run build:routes
+
+# 2. 本地测试
+npm run dev
+# → http://localhost:8787
+
+# 3. 部署到生产环境
+npm run deploy
+# → https://my-api.your-subdomain.workers.dev
+```
+
+**文件变更时自动重新生成清单：**
+
+为开发环境添加 `watch` 脚本：
+
+```json
+{
+  "scripts": {
+    "watch:routes": "nodemon --watch src/controllers -e ts --exec 'npm run build:routes'",
+    "dev:watch": "concurrently \"npm run watch:routes\" \"wrangler dev\""
+  }
+}
+```
+
 ---
 
 ## API 参考

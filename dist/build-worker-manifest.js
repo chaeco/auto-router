@@ -89,8 +89,19 @@ export function generateManifest(options) {
     for (const route of routes) {
         route.pattern = normalizedPrefix ? `${normalizedPrefix}${route.pattern}`.replace(/\/+/g, '/') : route.pattern;
     }
-    // Sort by pattern then method
-    routes.sort((a, b) => a.pattern.localeCompare(b.pattern) || a.method.localeCompare(b.method));
+    // Sort routes: specific paths before wildcards, then alphabetically
+    // This prevents '/api/:id' from hijacking '/api/users'
+    routes.sort((a, b) => {
+        const aHasParam = a.pattern.includes(':');
+        const bHasParam = b.pattern.includes(':');
+        // If one has params and the other doesn't, non-param comes first
+        if (aHasParam && !bHasParam)
+            return 1;
+        if (!aHasParam && bHasParam)
+            return -1;
+        // Otherwise sort alphabetically by pattern, then method
+        return a.pattern.localeCompare(b.pattern) || a.method.localeCompare(b.method);
+    });
     // Detect duplicates
     const seen = new Set();
     const uniqueRoutes = [];

@@ -44,7 +44,13 @@ function matchRoute(pattern: string, pathname: string): MatchResult {
     const ps = patternSegs[i]
     const vs = pathSegs[i]
     if (ps.startsWith(':')) {
-      params[ps.slice(1)] = decodeURIComponent(vs)
+      // decodeURIComponent can throw URIError on malformed sequences
+      // Return null (no match) instead of crashing the entire request
+      try {
+        params[ps.slice(1)] = decodeURIComponent(vs)
+      } catch {
+        return null
+      }
     } else if (ps !== vs) {
       return null
     }
@@ -103,25 +109,33 @@ export function createWorkerRouter<TEnv = unknown, TCtx = ExecutionContext>(
           throw new TypeError(`Handler for ${req.method} ${pathname} is not a function (got ${typeof matched.handler})`)
         }
         result = await (matched.handler as (ctx: WorkerRouteContext<TEnv, TCtx>) => unknown)(routeCtx)
+
+        // Response serialization precedence
+        if (result instanceof Response) return result
+
+        if (result !== undefined && result !== null) {
+          // JSON.stringify can throw on circular references, BigInt, etc.
+          // We catch it here to route through onError
+          let jsonString: string
+          try {
+            jsonString = JSON.stringify(result)
+          } catch (stringifyErr) {
+            throw new TypeError(`Failed to serialize response as JSON: ${stringifyErr instanceof Error ? stringifyErr.message : String(stringifyErr)}`)
+          }
+          return new Response(jsonString, {
+            status: routeCtx.res.status,
+            headers: { 'Content-Type': 'application/json', ...routeCtx.res.headers },
+          })
+        }
+
+        return new Response(routeCtx.res.body, {
+          status: routeCtx.res.status,
+          headers: routeCtx.res.headers,
+        })
       } catch (err) {
         if (onError) return onError(err, req, env, ctx)
         return new Response('Internal Server Error', { status: 500 })
       }
-
-      // Response serialization precedence
-      if (result instanceof Response) return result
-
-      if (result !== undefined && result !== null) {
-        return new Response(JSON.stringify(result), {
-          status: routeCtx.res.status,
-          headers: { 'Content-Type': 'application/json', ...routeCtx.res.headers },
-        })
-      }
-
-      return new Response(routeCtx.res.body, {
-        status: routeCtx.res.status,
-        headers: routeCtx.res.headers,
-      })
     },
   }
 }

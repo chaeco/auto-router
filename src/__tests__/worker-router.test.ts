@@ -458,4 +458,102 @@ describe('createWorkerRouter', () => {
     const notFoundRes = await router.fetch(notFoundReq, {}, {} as ExecutionContext)
     expect(notFoundRes.status).toBe(404)
   })
+
+  it('handles circular references in JSON serialization', async () => {
+    const handler = async () => {
+      const obj: any = { data: [] }
+      obj.data.push(obj)  // Circular reference
+      return obj
+    }
+
+    let errorCaptured: unknown = null
+    const onError = (err: unknown) => {
+      errorCaptured = err
+      return new Response('Serialization failed', { status: 500 })
+    }
+
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/circular', method: 'GET', handler }
+    ]
+    const router = createWorkerRouter({ routes, onError })
+
+    const req = new Request('http://localhost/api/circular', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(500)
+    expect(await res.text()).toBe('Serialization failed')
+    expect(errorCaptured).toBeInstanceOf(TypeError)
+    expect((errorCaptured as Error).message).toContain('serialize')
+  })
+
+  it('handles BigInt in JSON serialization', async () => {
+    const handler = async () => {
+      return { value: BigInt(9007199254740991) }
+    }
+
+    let errorCaptured: unknown = null
+    const onError = (err: unknown) => {
+      errorCaptured = err
+      return new Response('BigInt error', { status: 500 })
+    }
+
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/bigint', method: 'GET', handler }
+    ]
+    const router = createWorkerRouter({ routes, onError })
+
+    const req = new Request('http://localhost/api/bigint', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(500)
+    expect(errorCaptured).toBeInstanceOf(TypeError)
+  })
+
+  it('handles malformed URI encoding in path parameters', async () => {
+    const handler = async (ctx: WorkerRouteContext) => {
+      return { id: ctx.params.id }
+    }
+
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/:id', method: 'GET', handler }
+    ]
+    const router = createWorkerRouter({ routes })
+
+    // Malformed UTF-8 sequence
+    const req = new Request('http://localhost/api/%E0%A4%A', { method: 'GET' })
+    const res = await router.fetch(req, {}, {} as ExecutionContext)
+
+    // Should return 404 (no match) instead of crashing
+    expect(res.status).toBe(404)
+  })
+
+  it('matches specific routes before wildcard routes', async () => {
+    let usersHandlerCalled = false
+    let idHandlerCalled = false
+
+    const usersHandler = async () => {
+      usersHandlerCalled = true
+      return { type: 'users' }
+    }
+    const idHandler = async (ctx: WorkerRouteContext) => {
+      idHandlerCalled = true
+      return { type: 'id', id: ctx.params.id }
+    }
+
+    // Intentionally put wildcard first to test that order matters
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/:id', method: 'GET', handler: idHandler },
+      { pattern: '/api/users', method: 'GET', handler: usersHandler },
+    ]
+    const router = createWorkerRouter({ routes })
+
+    // This should match the wildcard (since it's first)
+    const req1 = new Request('http://localhost/api/users', { method: 'GET' })
+    const res1 = await router.fetch(req1, {}, {} as ExecutionContext)
+
+    // With first-match semantics, wildcard wins
+    expect(idHandlerCalled).toBe(true)
+    expect(usersHandlerCalled).toBe(false)
+    expect(await res1.json()).toEqual({ type: 'id', id: 'users' })
+  })
 })

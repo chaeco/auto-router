@@ -150,7 +150,7 @@ describe('generateManifest', () => {
     console.warn = originalWarn
   })
 
-  it('sorts routes alphabetically by pattern then method', () => {
+  it('sorts routes with specific paths before wildcards', () => {
     const controllersDir = join(testDir, 'controllers')
     const outputFile = join(testDir, 'output', 'routes.ts')
     mkdirSync(controllersDir, { recursive: true })
@@ -163,12 +163,13 @@ describe('generateManifest', () => {
     const lines = manifest.split('\n')
     const routeLines = lines.filter(line => line.includes("{ pattern:"))
 
-    expect(routeLines[0]).toContain("'/api/:id'")
+    // Specific paths (/api/users) should come before wildcards (/api/:id)
+    expect(routeLines[0]).toContain("'/api/users'")
     expect(routeLines[0]).toContain("'GET'")
     expect(routeLines[1]).toContain("'/api/users'")
-    expect(routeLines[1]).toContain("'GET'")
-    expect(routeLines[2]).toContain("'/api/users'")
-    expect(routeLines[2]).toContain("'POST'")
+    expect(routeLines[1]).toContain("'POST'")
+    expect(routeLines[2]).toContain("'/api/:id'")
+    expect(routeLines[2]).toContain("'GET'")
   })
 
   it('includes regenerate command in header comment', () => {

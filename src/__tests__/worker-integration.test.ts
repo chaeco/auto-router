@@ -1,6 +1,6 @@
 import { generateManifest } from '../build-worker-manifest.js'
 import { createWorkerRouter, type WorkerManifestRoute, type WorkerRouteContext } from '../worker-manifest.js'
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'fs'
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
@@ -176,6 +176,20 @@ describe('Worker integration (end-to-end)', () => {
   })
 
   it('treats case-variant param patterns as duplicates (registered pattern keeps case)', async () => {
+    // Only runs on case-sensitive filesystems (macOS/Windows fold the two
+    // file names into one). 仅大小写敏感的文件系统上运行（macOS/Windows
+    // 会把两个文件名折叠为一个）。
+    const probe = join(testDir, 'case-probe')
+    mkdirSync(probe, { recursive: true })
+    writeFileSync(join(probe, 'probe-A.ts'), '')
+    // On a case-insensitive FS, probe-a.ts resolves to the same file and
+    // "exists"; on a case-sensitive FS it does not yet exist.
+    // 大小写不敏感的 FS 上 probe-a.ts 会解析到同一文件而"存在"；大小写敏感
+    // 的 FS 上它此时还不存在。
+    const caseSensitive = !existsSync(join(probe, 'probe-a.ts'))
+    rmSync(probe, { recursive: true, force: true })
+    if (!caseSensitive) return
+
     const controllersDir = join(testDir, 'controllers')
     const outputFile = join(testDir, 'routes.ts')
     mkdirSync(controllersDir, { recursive: true })

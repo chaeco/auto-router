@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals'
 import { autoRouter } from '../auto-router.js'
-import { mkdirSync, writeFileSync, rmSync, chmodSync, symlinkSync } from 'fs'
+import { mkdirSync, writeFileSync, rmSync, chmodSync, symlinkSync, existsSync } from 'fs'
 import { join } from 'path'
 
 describe('autoRouter', () => {
@@ -1257,6 +1257,65 @@ describe('autoRouter', () => {
     expect(mockApp.delete).toHaveBeenCalledWith('/api/:org/members/:userId', expect.any(Function))
     expect(mockApp.patch).toHaveBeenCalledWith('/api/:org/settings/:key', expect.any(Function))
     expect(mockApp.$routes!.all).toHaveLength(3)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should treat case-variant param files as duplicates (one registers, casing kept)', async () => {
+    // Case-variant file names only coexist on case-sensitive filesystems —
+    // macOS (APFS) and Windows fold them into one file, so this test only
+    // runs where it can actually create both files.
+    // 仅大小写敏感的文件系统能让两个大小写变体文件共存——macOS (APFS) 与
+    // Windows 会把它们折叠为同一文件，因此本测试只在能真正创建两个文件时运行。
+    const probe = join(process.cwd(), '__tests__', 'case-probe')
+    mkdirSync(probe, { recursive: true })
+    writeFileSync(join(probe, 'probe-A.js'), '')
+    // On a case-insensitive FS, probe-a.js resolves to the same file and
+    // "exists"; on a case-sensitive FS it does not yet exist.
+    // 大小写不敏感的 FS 上 probe-a.js 会解析到同一文件而"存在"；大小写敏感
+    // 的 FS 上它此时还不存在。
+    const caseSensitive = !existsSync(join(probe, 'probe-a.js'))
+    rmSync(probe, { recursive: true, force: true })
+    if (!caseSensitive) return
+
+    const dir = join(process.cwd(), '__tests__', 'controllers-case-variant')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-[userId].js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, 'get-[USERID].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    // Exactly one registers (readdir order decides which), and it keeps its casing
+    expect(mockApp.get).toHaveBeenCalledTimes(1)
+    const registeredPath = mockApp.get.mock.calls[0][0] as string
+    expect(registeredPath === '/api/:userId' || registeredPath === '/api/:USERID').toBe(true)
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Duplicate route'))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    consoleSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should register [userId] and [user_id] as two separate routes', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-userid-vs-userid-underscore')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-[userId].js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, 'get-[user_id].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    // user_id is a distinct name — not a duplicate of userId
+    expect(mockApp.get).toHaveBeenCalledTimes(2)
+    expect(mockApp.get).toHaveBeenCalledWith('/api/:userId', expect.any(Function))
+    expect(mockApp.get).toHaveBeenCalledWith('/api/:user_id', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(2)
 
     logSpy.mockRestore()
     rmSync(dir, { recursive: true, force: true })

@@ -653,4 +653,27 @@ describe('createWorkerRouter', () => {
     expect(usersHandlerCalled).toBe(false)
     expect(await res1.json()).toEqual({ type: 'id', id: 'users' })
   })
+
+  it('matches static path segments case-sensitively', async () => {
+    const handler = async () => 'OK'
+    const routes: WorkerManifestRoute[] = [{ pattern: '/api/users', method: 'GET', handler }]
+    const router = createWorkerRouter({ routes })
+
+    // Exact case matches
+    const okReq = new Request('http://localhost/api/users', { method: 'GET' })
+    expect((await router.fetch(okReq, {}, {} as ExecutionContext)).status).toBe(200)
+
+    // Case mismatch → 404 (static segments are case-sensitive)
+    const badReq = new Request('http://localhost/api/Users', { method: 'GET' })
+    expect((await router.fetch(badReq, {}, {} as ExecutionContext)).status).toBe(404)
+  })
+
+  it('preserves param-name casing in ctx.params for hand-written patterns', async () => {
+    const handler = async (ctx: WorkerRouteContext) => ctx.params
+    const routes: WorkerManifestRoute[] = [{ pattern: '/api/:userId', method: 'GET', handler }]
+    const router = createWorkerRouter({ routes })
+
+    const res = await router.fetch(new Request('http://localhost/api/42', { method: 'GET' }), {}, {} as ExecutionContext)
+    expect(await res.json()).toEqual({ userId: '42' })
+  })
 })

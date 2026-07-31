@@ -16,10 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enforced across all three registration paths: `autoRouter` (file scan), `generateManifest` (Workers CLI), and `staticAutoRouter` (bracket syntax in `path` rejected — use `:param` form)
   - Malformed files/dirs are skipped with an error log instead of registering a broken route
 - **Case-insensitive duplicate detection** — param-name casing is folded when building the duplicate-detection key, so `get-[userId].ts` and `get-[UserID].ts` are treated as the same route (they match the same URLs). The **registered** pattern keeps the original casing — `[userId]` registers as `:userId` and `ctx.params.userId` reads the way it was written, matching Express/Koa/Hoa conventions. Applied via `normalizeParamNames` across `autoRouter`, `staticAutoRouter`, and `generateManifest`
+- **Sharper directory-param error messages** — `validateDirSegment` now distinguishes structural errors (glued static text, multiple params, spaces, empty brackets → "single [id] segment") from ASCII violations (`[user-id]`, `[用户名]` → "only ASCII letters")
 
 ### Tested
 
-- 179 tests passing (19 new: validation cases in `parse-route`, rejection paths in `auto-router`, `build-worker-manifest`, `static-router`, `normalizeParamNames` dedup, and case-variant dedup in `worker-integration`)
+- 195 tests passing (15 new this change, all edge-case coverage; 35 new since v0.0.14 including the validation and dedup work)
+  - `parse-route`: trailing/leading dashes, glued static text, empty inner brackets, spaces in names, underscore/case variants
+  - `auto-router` / `worker-integration`: `[userId]` vs `[user_id]` register as two routes; case-variant files dedup on case-sensitive filesystems (probe-gated — macOS/Windows fold the filenames into one file)
+  - `worker-router`: static-segment case-sensitivity and hand-written `:param` casing preserved in `ctx.params`
+  - `static-router`: `:param` case preserved in registration; case-variant paths dedup
 
 ## [0.0.14] - 2026-07-31
 

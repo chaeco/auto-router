@@ -82,13 +82,23 @@ export function validateDirSegment(segment) {
     if (!segment.includes('[') && !segment.includes(']')) {
         return; // Pure static name — nothing to validate
     }
-    if (!DIR_PARAM_PATTERN.test(segment)) {
-        throw new Error(`Invalid parameter syntax in directory "${segment}": a parameter must be a single [id] segment`);
+    if (DIR_PARAM_PATTERN.test(segment)) {
+        // Whole-segment `[name]` — the name itself must be ASCII-safe.
+        // 独占整段的 `[name]`——名字本身必须是 ASCII 安全字符。
+        const name = segment.slice(1, -1);
+        if (!ASCII_PARAM.test(name)) {
+            throw new Error(`Invalid parameter name "${name}" in directory "${segment}": only ASCII letters, digits and underscore allowed`);
+        }
+        return;
     }
-    const name = segment.slice(1, -1);
-    if (!ASCII_PARAM.test(name)) {
-        throw new Error(`Invalid parameter name "${name}" in directory "${segment}": only ASCII letters, digits and underscore allowed`);
+    // Not a whole-segment `[name]`: glued static text, multiple params, empty
+    // brackets, or spaces around the name are structural errors.
+    // 非独占整段：粘连静态文本、多个参数、空括号、名字含空格都是结构错误。
+    const inner = segment.slice(segment.indexOf('[') + 1, segment.indexOf(']'));
+    if (inner.includes(' ') || inner === '') {
+        throw new Error(`Invalid parameter syntax in directory "${segment}": a parameter must be a single [id] segment without spaces`);
     }
+    throw new Error(`Invalid parameter syntax in directory "${segment}": a parameter must be a single [id] segment`);
 }
 /**
  * Convert a route name fragment (everything after `method-` in a file name)

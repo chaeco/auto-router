@@ -137,6 +137,39 @@ describe('staticAutoRouter', () => {
     errorSpy.mockRestore()
   })
 
+  it('should register :param paths with case preserved', async () => {
+    const mockApp: any = { get: jest.fn(), $routes: { publicRoutes: [], protectedRoutes: [], all: [] } }
+
+    const router = staticAutoRouter({
+      routes: [
+        { method: 'get', path: '/api/users/:userId/posts/:postId', handler },
+      ],
+    })
+    await router(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users/:userId/posts/:postId', handler)
+    expect(mockApp.$routes!.all).toHaveLength(1)
+  })
+
+  it('should treat case-variant :param paths as duplicates', async () => {
+    const mockApp: any = { get: jest.fn(), $routes: { publicRoutes: [], protectedRoutes: [], all: [] } }
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    const router = staticAutoRouter({
+      routes: [
+        { method: 'get', path: '/api/users/:userId', handler },
+        { method: 'get', path: '/api/users/:USERID', handler },
+      ],
+    })
+    await router(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledTimes(1)
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Duplicate route'))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    errorSpy.mockRestore()
+  })
+
   it('should detect duplicate routes across two staticAutoRouter calls', async () => {
     const mockApp: any = { get: jest.fn(), $routes: undefined }
 

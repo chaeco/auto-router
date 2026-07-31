@@ -26,6 +26,21 @@ describe('parseRouteName', () => {
     expect(parseRouteName('[a]-[b]-[c]')).toBe(':a/:b/:c')
   })
 
+  it('converts underscore params and preserves case', () => {
+    expect(parseRouteName('[user_id]')).toBe(':user_id')
+    expect(parseRouteName('[user_id]-posts')).toBe(':user_id/posts')
+    expect(parseRouteName('[ABC]')).toBe(':ABC')
+  })
+
+  it('converts param-static-param chains', () => {
+    expect(parseRouteName('x-[a]-y')).toBe('x/:a/y')
+    expect(parseRouteName('[a]-b')).toBe(':a/b')
+  })
+
+  it('rejects a trailing dash after a param (unbalanced segment)', () => {
+    expect(() => parseRouteName('[a]-[b]-[c]-')).toThrow()
+  })
+
   it('converts [org]-settings-[key] to :org/settings/:key (case preserved)', () => {
     expect(parseRouteName('[org]-settings-[key]')).toBe(':org/settings/:key')
   })
@@ -101,17 +116,43 @@ describe('validateRouteName', () => {
     expect(() => validateRouteName('[user-id]')).toThrow(/only ASCII/)
     expect(() => validateRouteName('[v1.2]')).toThrow(/only ASCII/)
   })
+
+  it('rejects a param glued to static text (no dash separator)', () => {
+    expect(() => validateRouteName('[a]x')).toThrow(/Invalid parameter syntax/)
+    expect(() => validateRouteName('x[a]')).toThrow(/Invalid parameter syntax/)
+    expect(() => validateRouteName('a-[b]x')).toThrow(/Invalid parameter syntax/)
+  })
+
+  it('rejects a trailing or leading dash that unbalances the segment list', () => {
+    expect(() => validateRouteName('[a]-')).toThrow(/Invalid parameter syntax/)
+    expect(() => validateRouteName('[a]-[b]-[c]-')).toThrow(/Invalid parameter syntax/)
+  })
+
+  it('accepts pure-static hyphens and leading/trailing dashes (static text)', () => {
+    expect(() => validateRouteName('user-info')).not.toThrow()
+    expect(() => validateRouteName('a--b')).not.toThrow()
+    expect(() => validateRouteName('a-')).not.toThrow()
+    expect(() => validateRouteName('-a')).not.toThrow()
+  })
+
+  it('accepts case and underscore variants as valid names', () => {
+    expect(() => validateRouteName('[user_id]')).not.toThrow()
+    expect(() => validateRouteName('[ABC]')).not.toThrow()
+    expect(() => validateRouteName('[a]-[b]')).not.toThrow()
+  })
 })
 
 describe('validateDirSegment', () => {
   it('accepts a whole-segment [param] and plain names', () => {
     expect(() => validateDirSegment('[userId]')).not.toThrow()
+    expect(() => validateDirSegment('[user_id]')).not.toThrow()
+    expect(() => validateDirSegment('[ABC]')).not.toThrow()
     expect(() => validateDirSegment('users')).not.toThrow()
     expect(() => validateDirSegment('user-posts')).not.toThrow()
   })
 
   it('rejects empty brackets', () => {
-    expect(() => validateDirSegment('[]')).toThrow(/single \[id\] segment/)
+    expect(() => validateDirSegment('[]')).toThrow(/without spaces|single \[id\] segment/)
   })
 
   it('rejects params glued to static text or multiple params', () => {
@@ -119,9 +160,19 @@ describe('validateDirSegment', () => {
     expect(() => validateDirSegment('[a][b]')).toThrow(/single \[id\] segment/)
   })
 
+  it('rejects names with spaces or empty inner brackets', () => {
+    expect(() => validateDirSegment('[ a]')).toThrow(/without spaces/)
+    expect(() => validateDirSegment('[a ]')).toThrow(/without spaces/)
+    expect(() => validateDirSegment('[]')).toThrow(/without spaces/)
+  })
+
   it('rejects non-ASCII or hyphenated parameter names', () => {
     expect(() => validateDirSegment('[用户名]')).toThrow(/only ASCII/)
     expect(() => validateDirSegment('[user-id]')).toThrow(/only ASCII/)
+  })
+
+  it('rejects a param glued to static text', () => {
+    expect(() => validateDirSegment('[a]x')).toThrow(/single \[id\] segment/)
   })
 })
 

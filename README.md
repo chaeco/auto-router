@@ -229,7 +229,7 @@ The file name `routeName` (everything after `method-`) goes through three regex 
 
 ### Parameter name validation
 
-Parameter names (the content inside brackets) must be **ASCII letters, digits, or underscore** (`[A-Za-z0-9_]`), and **keep their original casing** — `[userId]` registers as `:userId` and `ctx.params.userId` reads the way you wrote it. Duplicate detection is case-insensitive on param names, so `get-[userId].ts` and `get-[UserID].ts` are treated as the same route. The following are **rejected** — the offending file is skipped and an error is logged, instead of silently registering a broken route:
+Parameter names (the content inside brackets) must be **ASCII letters, digits, or underscore** (`[A-Za-z0-9_]`), and **keep their original casing** — `[userId]` registers as `:userId` and `ctx.params.userId` reads the way you wrote it. Duplicate detection folds **casing only**: `get-[userId].ts` and `get-[UserID].ts` are treated as the same route (they match the same URLs), but `user_id` is a distinct name — `get-[userId].ts` and `get-[user_id].ts` register as two separate routes. The following are **rejected** — the offending file is skipped and an error is logged, instead of silently registering a broken route:
 
 | Invalid | Reason |
 |---------|--------|

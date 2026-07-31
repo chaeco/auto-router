@@ -42,7 +42,7 @@ fullPath  = basePath ? basePath + '/' + routeName : '/' + routeName
 
 A hyphen `-` is only converted to `/` when it is adjacent to a dynamic parameter. Hyphens within purely static text (e.g. `user-info`, `my-api-v2`) are preserved as-is. There is no escape mechanism needed.
 
-**Parameter names keep their original casing** — `[userId]` registers as `:userId`, and `ctx.params` keys match how the route was written. Duplicate detection folds param-name casing, so `[userId]` and `[UserID]` are treated as the same route.
+**Parameter names keep their original casing** — `[userId]` registers as `:userId`, and `ctx.params` keys match how the route was written. Duplicate detection folds **casing only**: `[userId]` and `[UserID]` are treated as the same route; `user_id` is a distinct name and registers as a separate route.
 
 ## Validation rules
 

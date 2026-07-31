@@ -132,6 +132,11 @@ describe('normalizeParamNames', () => {
     expect(normalizeParamNames('/api/users/:userId/posts/:PostId')).toBe('/api/users/:userid/posts/:postid')
   })
 
+  it('does NOT fold underscore variants — user_id is a distinct name', () => {
+    expect(normalizeParamNames('/api/users/:user_id')).toBe('/api/users/:user_id')
+    expect(normalizeParamNames(':user_id')).not.toBe(':userid')
+  })
+
   it('accepts both bracket and colon param forms', () => {
     expect(normalizeParamNames('[UserId]-[PostId]')).toBe('[userid]-[postid]')
     expect(normalizeParamNames(':UserId/posts/:PostId')).toBe(':userid/posts/:postid')

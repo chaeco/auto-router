@@ -9,19 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Parameter name normalization (breaking)** — `[param]` names are now lowercased: `[userId]`, `[UserId]`, `[USERID]` all register as `:userid`, and `ctx.params` keys are always lowercase
-  - File-name params via `parseRouteName` / `parseDirSegment`, and hand-written `:param` patterns in `staticAutoRouter` / `createWorkerRouter` via `normalizeParamNames`
-  - Case-variant patterns are now treated as duplicates (e.g. `get-[userid].ts` + `get-[USERID].ts`)
 - **Parameter name validation** — `[param]` names are now validated instead of silently producing broken routes
   - Added `validateRouteName` / `validateDirSegment` to `parse-route.ts`; `parseRouteName` / `parseDirSegment` now throw on invalid syntax
   - Rejected: empty `[]`, adjacent params without a `-` separator (`[a][b]`), unpaired brackets, non-ASCII or hyphenated param names (`[user-id]`, `[用户名]`)
   - Directory params must span the whole segment (`[userId]/` valid; `users[id]/`, `[a][b]/` rejected)
   - Enforced across all three registration paths: `autoRouter` (file scan), `generateManifest` (Workers CLI), and `staticAutoRouter` (bracket syntax in `path` rejected — use `:param` form)
   - Malformed files/dirs are skipped with an error log instead of registering a broken route
+- **Case-insensitive duplicate detection** — param-name casing is folded when building the duplicate-detection key, so `get-[userId].ts` and `get-[UserID].ts` are treated as the same route (they match the same URLs). The **registered** pattern keeps the original casing — `[userId]` registers as `:userId` and `ctx.params.userId` reads the way it was written, matching Express/Koa/Hoa conventions. Applied via `normalizeParamNames` across `autoRouter`, `staticAutoRouter`, and `generateManifest`
 
 ### Tested
 
-- 176 tests passing (16 new: validation cases in `parse-route`, rejection paths in `auto-router`, `build-worker-manifest`, `static-router`, and lowercase dedup in `worker-integration`)
+- 179 tests passing (19 new: validation cases in `parse-route`, rejection paths in `auto-router`, `build-worker-manifest`, `static-router`, `normalizeParamNames` dedup, and case-variant dedup in `worker-integration`)
 
 ## [0.0.14] - 2026-07-31
 

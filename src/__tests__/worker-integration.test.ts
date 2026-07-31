@@ -140,7 +140,7 @@ describe('Worker integration (end-to-end)', () => {
     expect(await res2.json()).toEqual({ status: 'ok' })
   })
 
-  it('handles dynamic segments with brackets end-to-end (params lowercased)', async () => {
+  it('handles dynamic segments with brackets end-to-end (case preserved)', async () => {
     const controllersDir = join(testDir, 'controllers')
     const outputFile = join(testDir, 'routes.ts')
     mkdirSync(controllersDir, { recursive: true })
@@ -159,7 +159,7 @@ describe('Worker integration (end-to-end)', () => {
     })
 
     const handler = async (ctx: WorkerRouteContext) => {
-      return { userid: ctx.params.userid, postid: ctx.params.postid }
+      return { userId: ctx.params.userId, postId: ctx.params.postId }
     }
 
     const routes: WorkerManifestRoute[] = [
@@ -170,17 +170,17 @@ describe('Worker integration (end-to-end)', () => {
 
     const req = new Request('http://localhost/api/42/99', { method: 'GET' })
     const res = await router.fetch(req, {}, {} as ExecutionContext)
-    expect(await res.json()).toEqual({ userid: '42', postid: '99' })
+    expect(await res.json()).toEqual({ userId: '42', postId: '99' })
 
-    expect(manifestContent).toContain("{ pattern: '/api/:userid/:postid', method: 'GET'")
+    expect(manifestContent).toContain("{ pattern: '/api/:userId/:postId', method: 'GET'")
   })
 
-  it('treats case-variant param patterns as duplicates (lowercased names)', async () => {
+  it('treats case-variant param patterns as duplicates (registered pattern keeps case)', async () => {
     const controllersDir = join(testDir, 'controllers')
     const outputFile = join(testDir, 'routes.ts')
     mkdirSync(controllersDir, { recursive: true })
 
-    writeFileSync(join(controllersDir, 'get-[userid].ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'get-[userId].ts'), 'export default async (ctx) => {}')
     writeFileSync(join(controllersDir, 'get-[USERID].ts'), 'export default async (ctx) => {}')
 
     const manifestContent = generateManifest({ controllersDir, outputFile, prefix: '/api', ext: 'ts' })
@@ -189,6 +189,7 @@ describe('Worker integration (end-to-end)', () => {
     expect(importCount).toBe(1)
     const routeEntries = (manifestContent.match(/{ pattern:/g) || []).length
     expect(routeEntries).toBe(1)
+    expect(manifestContent).toContain("{ pattern: '/api/:userId', method: 'GET'")
   })
 
   it('custom error handlers work with generated routes', async () => {

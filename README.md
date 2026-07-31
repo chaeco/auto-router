@@ -117,15 +117,15 @@ controllers/
   get-users.ts                                      → GET /api/users
   get-[id].ts                                       → GET /api/:id
   post-login.ts                                     → POST /api/login
-  get-[userId]-posts.ts                             → GET /api/:userid/posts
-  get-[userId]-[postId].ts                          → GET /api/:userid/:postid
+  get-[userId]-posts.ts                             → GET /api/:userId/posts
+  get-[userId]-[postId].ts                          → GET /api/:userId/:postId
   users/
     [userId]/
       posts/
-        get.ts                                      → GET /api/users/:userid/posts
-        get-[id].ts                                 → GET /api/users/:userid/posts/:id
+        get.ts                                      → GET /api/users/:userId/posts
+        get-[id].ts                                 → GET /api/users/:userId/posts/:id
       settings/
-        get.ts                                      → GET /api/users/:userid/settings
+        get.ts                                      → GET /api/users/:userId/settings
   admin/
     get-dashboard.ts                                → GET /api/admin/dashboard
 ```
@@ -153,13 +153,13 @@ Every route file name encodes the **HTTP method** and the **URL structure**. The
 
 ### Single parameter
 
-Wrap the parameter name in square brackets `[]`. It becomes an Express-style `:param` path segment. **Parameter names are lowercased** — `[userId]` and `[UserID]` both register as `:userid`, and `ctx.params` keys are always lowercase.
+Wrap the parameter name in square brackets `[]`. It becomes an Express-style `:param` path segment. **Parameter names keep their original casing** — `[userId]` registers as `:userId`, and `ctx.params` keys match how you wrote them. `[userId]` and `[UserID]` are treated as the same route (case-insensitive duplicate detection).
 
 | File name | Registers |
 |-----------|-----------|
 | `get-[id].ts` | `GET /api/:id` |
 | `delete-[id].ts` | `DELETE /api/:id` |
-| `get-[userId].ts` | `GET /api/:userid` |
+| `get-[userId].ts` | `GET /api/:userId` |
 | `post-[type].ts` | `POST /api/:type` |
 
 ### Multiple parameters
@@ -168,10 +168,10 @@ Multiple `[param]` segments in the file name are separated by `-`. Each `-` betw
 
 | File name | Registers | Pattern |
 |-----------|-----------|---------|
-| `get-[userId]-posts.ts` | `GET /api/:userid/posts` | param + static |
+| `get-[userId]-posts.ts` | `GET /api/:userId/posts` | param + static |
 | `get-users-[id].ts` | `GET /api/users/:id` | static + param |
-| `get-[userId]-[postId].ts` | `GET /api/:userid/:postid` | param + param |
-| `put-[userId]-profile.ts` | `PUT /api/:userid/profile` | param + static |
+| `get-[userId]-[postId].ts` | `GET /api/:userId/:postId` | param + param |
+| `put-[userId]-profile.ts` | `PUT /api/:userId/profile` | param + static |
 | `get-[org]-settings-[key].ts` | `GET /api/:org/settings/:key` | param + static + param |
 | `get-[a]-[b]-[c].ts` | `GET /api/:a/:b/:c` | three consecutive params |
 
@@ -181,16 +181,16 @@ Directory names can also contain `[param]` brackets. This is the recommended way
 
 | File path | Registers |
 |-----------|-----------|
-| `users/[userId]/get.ts` | `GET /api/users/:userid` |
-| `users/[userId]/posts/get.ts` | `GET /api/users/:userid/posts` |
-| `users/[userId]/posts/[postId]/get.ts` | `GET /api/users/:userid/posts/:postid` |
-| `users/[userId]/posts/get-[id].ts` | `GET /api/users/:userid/posts/:id` |
+| `users/[userId]/get.ts` | `GET /api/users/:userId` |
+| `users/[userId]/posts/get.ts` | `GET /api/users/:userId/posts` |
+| `users/[userId]/posts/[postId]/get.ts` | `GET /api/users/:userId/posts/:postId` |
+| `users/[userId]/posts/get-[id].ts` | `GET /api/users/:userId/posts/:id` |
 
 Dynamic directories and file-level params compose naturally — directory params are processed first during recursive scanning, then file name params are appended.
 
 ### Choosing flat files vs nested directories
 
-A route like `GET /api/users/:userid/posts/:postid/comments/:commentid` can be expressed two ways:
+A route like `GET /api/users/:userId/posts/:postId/comments/:commentId` can be expressed two ways:
 
 | Approach | File path | Verdict |
 |----------|-----------|---------|
@@ -220,7 +220,7 @@ The file name `routeName` (everything after `method-`) goes through three regex 
 | `users` | `users` | `users` | `users` | `users` (no params, stays as-is) |
 | `user-info` | `user-info` | `user-info` | `user-info` | `user-info` (hyphen in static text, unchanged) |
 | `[id]` | `:id` | `:id` | `:id` | `:id` |
-| `[userId]-posts` | `:userid-posts` | `:userid-posts` | `:userid/posts` | `:userid/posts` |
+| `[userId]-posts` | `:userId-posts` | `:userId-posts` | `:userId/posts` | `:userId/posts` |
 | `users-[id]` | `users-:id` | `users/:id` | `users/:id` | `users/:id` |
 | `[a]-[b]` | `:a-:b` | `:a/:b` | `:a/:b` | `:a/:b` |
 | `[org]-settings-[key]` | `:org-settings-:key` | `:org/settings-:key` | `:org/settings/:key` | `:org/settings/:key` |
@@ -229,7 +229,7 @@ The file name `routeName` (everything after `method-`) goes through three regex 
 
 ### Parameter name validation
 
-Parameter names (the content inside brackets) must be **ASCII letters, digits, or underscore** (`[A-Za-z0-9_]`), and are **normalized to lowercase**. The following are **rejected** — the offending file is skipped and an error is logged, instead of silently registering a broken route:
+Parameter names (the content inside brackets) must be **ASCII letters, digits, or underscore** (`[A-Za-z0-9_]`), and **keep their original casing** — `[userId]` registers as `:userId` and `ctx.params.userId` reads the way you wrote it. Duplicate detection is case-insensitive on param names, so `get-[userId].ts` and `get-[UserID].ts` are treated as the same route. The following are **rejected** — the offending file is skipped and an error is logged, instead of silently registering a broken route:
 
 | Invalid | Reason |
 |---------|--------|
@@ -708,7 +708,7 @@ The auto-router validates every file during scanning and **skips** invalid files
 | Rule | Valid | Invalid |
 |------|-------|---------|
 | File name starts with HTTP method | `get-users.ts` | `users-get.ts` |
-| Bracket syntax for params | `[userId]` | `:userid` |
+| Bracket syntax for params | `[userId]` | `:userId` |
 | No empty brackets | `[id]` | `[]` |
 | Only default export | `export default async ...` | `export const foo = 1` + default |
 | Export is a function or `createHandler()` result | `async (ctx) => {}` | `export default 42` |
@@ -863,7 +863,7 @@ interface WorkerRouteContext<TEnv = unknown, TCtx = ExecutionContext> {
   req: Request                          // Web Platform Request
   env: TEnv                             // Worker environment bindings (KV, D1, secrets)
   ctx: TCtx                             // ExecutionContext (waitUntil, passThroughOnException)
-  params: Record<string, string>        // Route parameters (:id, :userid, etc.) — names lowercased
+  params: Record<string, string>        // Route parameters (:id, :userId, etc.) — case preserved
   res: {                                // Response builder (only used if handler returns undefined)
     status: number
     headers: Record<string, string>

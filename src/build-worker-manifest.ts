@@ -2,7 +2,7 @@
 
 import { readdirSync, statSync, mkdirSync, writeFileSync } from 'fs'
 import { join, resolve, relative, dirname, basename } from 'path'
-import { validateRouteName, parseRouteName, parseDirSegment } from './parse-route.js'
+import { validateRouteName, parseRouteName, parseDirSegment, normalizeParamNames } from './parse-route.js'
 
 const HTTP_METHODS = ['get', 'post', 'put', 'delete', 'patch', 'head', 'options']
 
@@ -156,11 +156,13 @@ export function generateManifest(options: GenerateManifestOptions): string {
     return a.pattern.localeCompare(b.pattern) || a.method.localeCompare(b.method)
   })
 
-  // Detect duplicates
+  // Detect duplicates — param-name casing is folded for the key, so
+  // `[userId]` and `[UserID]` patterns are treated as the same route.
+  // 去重键对参数名大小写不敏感，`[userId]` 与 `[UserID]` 视为同一条路由。
   const seen = new Set<string>()
   const uniqueRoutes: RouteEntry[] = []
   for (const route of routes) {
-    const key = `${route.method} ${route.pattern}`
+    const key = `${route.method} ${normalizeParamNames(route.pattern)}`
     if (seen.has(key)) {
       console.warn(`⚠️  Duplicate route skipped: ${key}`)
       continue

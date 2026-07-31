@@ -1,32 +1,32 @@
-import { parseRouteName, parseDirSegment, validateRouteName, validateDirSegment } from '../parse-route.js'
+import { parseRouteName, parseDirSegment, validateRouteName, validateDirSegment, normalizeParamNames } from '../parse-route.js'
 
 describe('parseRouteName', () => {
-  it('converts [param] to :param (lowercased)', () => {
+  it('converts [param] to :param (case preserved)', () => {
     expect(parseRouteName('[id]')).toBe(':id')
-    expect(parseRouteName('[userId]')).toBe(':userid')
-    expect(parseRouteName('[UserID]')).toBe(':userid')
+    expect(parseRouteName('[userId]')).toBe(':userId')
+    expect(parseRouteName('[UserID]')).toBe(':UserID')
   })
 
-  it('converts [param1]-[param2] to :param1/:param2 (lowercased)', () => {
+  it('converts [param1]-[param2] to :param1/:param2 (case preserved)', () => {
     expect(parseRouteName('[a]-[b]')).toBe(':a/:b')
-    expect(parseRouteName('[userId]-[postId]')).toBe(':userid/:postid')
+    expect(parseRouteName('[userId]-[postId]')).toBe(':userId/:postId')
   })
 
-  it('converts [param]-static to :param/static (lowercased)', () => {
-    expect(parseRouteName('[userId]-posts')).toBe(':userid/posts')
+  it('converts [param]-static to :param/static (case preserved)', () => {
+    expect(parseRouteName('[userId]-posts')).toBe(':userId/posts')
     expect(parseRouteName('[org]-settings')).toBe(':org/settings')
   })
 
-  it('converts static-[param] to static/:param (lowercased)', () => {
+  it('converts static-[param] to static/:param (case preserved)', () => {
     expect(parseRouteName('users-[id]')).toBe('users/:id')
-    expect(parseRouteName('posts-[postId]')).toBe('posts/:postid')
+    expect(parseRouteName('posts-[postId]')).toBe('posts/:postId')
   })
 
   it('converts [a]-[b]-[c] to :a/:b/:c', () => {
     expect(parseRouteName('[a]-[b]-[c]')).toBe(':a/:b/:c')
   })
 
-  it('converts [org]-settings-[key] to :org/settings/:key (lowercased)', () => {
+  it('converts [org]-settings-[key] to :org/settings/:key (case preserved)', () => {
     expect(parseRouteName('[org]-settings-[key]')).toBe(':org/settings/:key')
   })
 
@@ -48,14 +48,14 @@ describe('parseRouteName', () => {
     // Regression guard: if step 3 ran before step 2, [a]-[b] would become :a-:b → :a/:b (wrong intermediate)
     // Correct order: [a]-[b] → :a-:b → :a/:b (step 2) → :a/:b (step 3 no-op)
     const result = parseRouteName('[userId]-[postId]')
-    expect(result).toBe(':userid/:postid')
+    expect(result).toBe(':userId/:postId')
   })
 })
 
 describe('parseDirSegment', () => {
-  it('converts [param] to :param (lowercased)', () => {
-    expect(parseDirSegment('[userId]')).toBe(':userid')
-    expect(parseDirSegment('[PostId]')).toBe(':postid')
+  it('converts [param] to :param (case preserved)', () => {
+    expect(parseDirSegment('[userId]')).toBe(':userId')
+    expect(parseDirSegment('[PostId]')).toBe(':PostId')
   })
 
   it('preserves plain names', () => {
@@ -122,5 +122,23 @@ describe('validateDirSegment', () => {
   it('rejects non-ASCII or hyphenated parameter names', () => {
     expect(() => validateDirSegment('[用户名]')).toThrow(/only ASCII/)
     expect(() => validateDirSegment('[user-id]')).toThrow(/only ASCII/)
+  })
+})
+
+describe('normalizeParamNames', () => {
+  it('folds param-name casing for duplicate detection', () => {
+    expect(normalizeParamNames('/api/users/:UserId')).toBe('/api/users/:userid')
+    expect(normalizeParamNames('/api/users/:USERID')).toBe('/api/users/:userid')
+    expect(normalizeParamNames('/api/users/:userId/posts/:PostId')).toBe('/api/users/:userid/posts/:postid')
+  })
+
+  it('accepts both bracket and colon param forms', () => {
+    expect(normalizeParamNames('[UserId]-[PostId]')).toBe('[userid]-[postid]')
+    expect(normalizeParamNames(':UserId/posts/:PostId')).toBe(':userid/posts/:postid')
+  })
+
+  it('leaves static text untouched', () => {
+    expect(normalizeParamNames('/api/users/posts')).toBe('/api/users/posts')
+    expect(normalizeParamNames('/api/user-info')).toBe('/api/user-info')
   })
 })

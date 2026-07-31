@@ -3,7 +3,7 @@ import { join, resolve } from 'path'
 import { pathToFileURL } from 'url'
 import { isRouteConfig, type RouteMeta, type RouteInfo, type RouteMiddleware } from './handler.js'
 import { matchesFilter } from './matches-filter.js'
-import { validateRouteName, validateDirSegment, parseRouteName, parseDirSegment } from './parse-route.js'
+import { validateRouteName, validateDirSegment, parseRouteName, parseDirSegment, normalizeParamNames } from './parse-route.js'
 
 /** Internal options passed from autoRouter() after normalization. */
 export interface LoadRoutesOptions {
@@ -235,12 +235,17 @@ export async function loadRoutes(
         fullPath = fullPath.replace(/\/+/g, '/') // Remove double slashes
         // 移除双斜杠
 
-        // Detect duplicate routes
-        // 检测重复路由
+        // Detect duplicate routes — param-name casing is folded for the key,
+        // so `get-[userId].ts` and `get-[UserID].ts` are treated as the same
+        // route (they match the same URLs). The registered pattern keeps the
+        // original casing.
+        // 检测重复路由——去重键对参数名大小写不敏感，`get-[userId].ts` 与
+        // `get-[UserID].ts` 视为同一条路由（二者匹配相同的 URL）。
+        // 注册的 pattern 保留原始大小写。
         const routePath = prefix
           ? `${prefix}${fullPath}`.replace(/\/+/g, '/') // Normalize any double slashes from prefix
           : fullPath                                     // 归一化来自 prefix 的多余斜杠
-        const routeKey = `${method.toUpperCase()} ${routePath}`
+        const routeKey = `${method.toUpperCase()} ${normalizeParamNames(routePath)}`
         if (registeredRoutes.has(routeKey)) {
           log('error', `❌ Skip file: ${filePath}`)
           // 跳过文件: ${filePath}

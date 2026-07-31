@@ -32,7 +32,7 @@ All routes inherit `defaultRequiresAuth: false` — public API.
 
 ## Scenario 2: Resource hierarchy with nested directories
 
-Goal: `GET /api/users/:userid/posts/:postid/comments`
+Goal: `GET /api/users/:userId/posts/:postId/comments`
 
 ```
 controllers/
@@ -41,15 +41,15 @@ controllers/
       posts/
         [postId]/
           comments/
-            get.ts       → GET /api/users/:userid/posts/:postid/comments
-            post.ts      → POST /api/users/:userid/posts/:postid/comments
+            get.ts       → GET /api/users/:userId/posts/:postId/comments
+            post.ts      → POST /api/users/:userId/posts/:postId/comments
 ```
 
 ```typescript
 // controllers/users/[userId]/posts/[postId]/comments/get.ts
 export default async (ctx) => {
-  const { userid, postid } = ctx.params
-  ctx.res.body = await db.comments.findByPost({ userid, postid })
+  const { userId, postId } = ctx.params
+  ctx.res.body = await db.comments.findByPost({ userId, postId })
 }
 ```
 
@@ -59,21 +59,21 @@ Each directory segment is short. The hierarchy is self-documenting.
 
 Goal:
 ```
-GET    /api/orgs/:orgid
-GET    /api/orgs/:orgid/members
-POST   /api/orgs/:orgid/members
-DELETE /api/orgs/:orgid/members/:userid
+GET    /api/orgs/:orgId
+GET    /api/orgs/:orgId/members
+POST   /api/orgs/:orgId/members
+DELETE /api/orgs/:orgId/members/:userId
 ```
 
 ```
 controllers/
   orgs/
-    get-[orgId].ts                    → GET    /api/orgs/:orgid
+    get-[orgId].ts                    → GET    /api/orgs/:orgId
     [orgId]/
       members/
-        get.ts                        → GET    /api/orgs/:orgid/members
-        post.ts                       → POST   /api/orgs/:orgid/members
-        delete-[userId].ts            → DELETE /api/orgs/:orgid/members/:userid
+        get.ts                        → GET    /api/orgs/:orgId/members
+        post.ts                       → POST   /api/orgs/:orgId/members
+        delete-[userId].ts            → DELETE /api/orgs/:orgId/members/:userId
 ```
 
 The top-level `get-[orgId].ts` is flat (≤3 segments). The `members` subtree uses directories for deeper nesting.
@@ -235,8 +235,8 @@ import { createHandler } from '@chaeco/auto-router'
 
 export default createHandler(
   async (ctx) => {
-    const { userid } = ctx.params
-    ctx.res.body = await db.users.findById(userid)
+    const { userId } = ctx.params
+    ctx.res.body = await db.users.findById(userId)
   },
   {
     requiresAuth: true,

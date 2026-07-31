@@ -1,5 +1,6 @@
 import { isRouteConfig, type RouteInfo, type RouteMiddleware } from './handler.js'
 import { matchesFilter } from './matches-filter.js'
+import { validateRouteName } from './parse-route.js'
 
 /** Static route entry — callers statically import handlers and declare method/path. */
 export interface StaticRoute {
@@ -107,6 +108,26 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
 
     for (const { method, path: routePath, handler: rawHandler } of routes) {
       const normalizedMethod = method.toLowerCase()
+
+      // Reject routes whose path uses the file-name [param] syntax — the `-` → `/`
+      // conversion is a file-naming concern, static routes must be written in
+      // Express-style `:param` form directly.
+      // 拒绝路径中使用文件名 [param] 语法的路由——连字符转斜杠是文件命名的规则，
+      // 静态路由必须直接写成 Express 风格的 :param 形式。
+      if (routePath.includes('[') || routePath.includes(']')) {
+        try {
+          validateRouteName(routePath)
+        } catch (err) {
+          log('error', `❌ Skip route ${routePath}: ${err instanceof Error ? err.message : String(err)}`)
+          continue
+        }
+        log(
+          'error',
+          `❌ Skip route ${routePath}: use Express-style :param (e.g. '/users/:id') — file-name [param] syntax is not valid in static routes`
+        )
+        continue
+      }
+
       const routeKey = `${normalizedMethod.toUpperCase()} ${routePath}`
 
       if (registeredRoutes.has(routeKey)) {

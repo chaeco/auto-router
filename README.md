@@ -227,6 +227,23 @@ The file name `routeName` (everything after `method-`) goes through three regex 
 
 **Key rule:** A `-` is only converted to `/` when it is adjacent to a dynamic parameter (`:`). Hyphens within purely static text (e.g., `user-info`, `my-api-v2`) are preserved as-is. You do **not** need to work around static hyphens.
 
+### Parameter name validation
+
+Parameter names (the content inside brackets) must be **ASCII letters, digits, or underscore** (`[A-Za-z0-9_]`). The following are **rejected** — the offending file is skipped and an error is logged, instead of silently registering a broken route:
+
+| Invalid | Reason |
+|---------|--------|
+| `get-[].ts` | Empty parameter |
+| `get-[a][b].ts` | Adjacent params must be joined with `-` (use `get-[a]-[b].ts`) |
+| `get-[id.ts` / `get-id].ts` | Unpaired brackets |
+| `get-[user-id].ts` | Hyphen inside a param name (use `get-user-[id].ts` or `get-[userId].ts`) |
+| `get-[v1.2].ts` | Dot inside a param name |
+| `get-[用户名].ts` | Non-ASCII param name |
+
+Directory names follow the same rules, and a param must **span the whole segment** — `[userId]/` is valid, while `users[id]/` and `[a][b]/` are not.
+
+> Note: `staticAutoRouter` `path` values should use Express-style `:param` directly (e.g. `'/api/users/:id'`). The file-name `[param]` syntax is a file-naming convention and does not apply to static route declarations.
+
 ---
 
 ## Export Methods

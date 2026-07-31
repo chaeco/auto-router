@@ -57,12 +57,12 @@ describe('generateManifest', () => {
     const controllersDir = join(testDir, 'controllers')
     const outputFile = join(testDir, 'output', 'routes.ts')
     mkdirSync(join(controllersDir, 'admin'), { recursive: true })
-    writeFileSync(join(controllersDir, 'admin', 'get-[user-id].ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'admin', 'get-user-posts.ts'), 'export default async (ctx) => {}')
 
     const manifest = generateManifest({ controllersDir, outputFile, prefix: '/api', ext: 'ts' })
 
-    expect(manifest).toContain('import handler_admin_get_user_id from')
-    expect(manifest).not.toContain('handler_admin_get_[user-id]')
+    expect(manifest).toContain('import handler_admin_get_user_posts from')
+    expect(manifest).not.toContain('handler_admin_get_user-posts')
   })
 
   it('calculates correct relative import paths', () => {
@@ -123,6 +123,22 @@ describe('generateManifest', () => {
 
     expect(manifest).toContain('handler_get_users')
     expect(manifest).not.toContain('handler_users_get')
+  })
+
+  it('skips files with malformed parameter syntax', () => {
+    const controllersDir = join(testDir, 'controllers')
+    const outputFile = join(testDir, 'output', 'routes.ts')
+    mkdirSync(controllersDir, { recursive: true })
+    writeFileSync(join(controllersDir, 'get-[id].ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'get-[a][b].ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'get-[].ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'get-[user-id].ts'), 'export default async (ctx) => {}')
+
+    const manifest = generateManifest({ controllersDir, outputFile, prefix: '/api', ext: 'ts' })
+
+    expect(manifest).toContain("pattern: '/api/:id'")
+    expect(manifest).not.toContain('get_[a][b]')
+    expect(manifest).not.toContain('get_[user-id]')
   })
 
   it('skips duplicate routes and warns', () => {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readdirSync, statSync, mkdirSync, writeFileSync } from 'fs';
 import { join, resolve, relative, dirname } from 'path';
-import { parseRouteName, parseDirSegment } from './parse-route.js';
+import { validateRouteName, parseRouteName, parseDirSegment } from './parse-route.js';
 const HTTP_METHODS = ['get', 'post', 'put', 'delete', 'patch', 'head', 'options'];
 function validateFileName(fileName) {
     const nameWithoutExt = fileName.replace(/\.(ts|js)$/, '');
@@ -10,6 +10,17 @@ function validateFileName(fileName) {
     }
     for (const m of HTTP_METHODS) {
         if (nameWithoutExt.startsWith(m + '-')) {
+            // Validate parameter syntax in the route name (throws on malformed [param])
+            // 校验路由名中的参数语法（遇到非法 [param] 会抛错）
+            const routeName = nameWithoutExt.substring(m.length + 1);
+            if (routeName) {
+                try {
+                    validateRouteName(routeName);
+                }
+                catch (err) {
+                    return { valid: false, error: err instanceof Error ? err.message : String(err) };
+                }
+            }
             return { valid: true, method: m };
         }
     }
@@ -35,7 +46,15 @@ function scanDir(dirPath, basePath, controllersRoot, ext, routes) {
             continue;
         }
         if (stat.isDirectory()) {
-            const dirSegment = parseDirSegment(file);
+            let dirSegment;
+            try {
+                dirSegment = parseDirSegment(file);
+            }
+            catch {
+                // Skip directories with invalid [param] syntax
+                // 跳过含非法 [param] 语法的目录
+                continue;
+            }
             try {
                 scanDir(filePath, basePath ? `${basePath}/${dirSegment}` : `/${dirSegment}`, controllersRoot, ext, routes);
             }

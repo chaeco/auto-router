@@ -612,6 +612,58 @@ describe('autoRouter', () => {
     rmSync(emptyParamDir, { recursive: true, force: true })
   })
 
+  it('should reject file with adjacent params without separator [a][b]', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-adjacent-params')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-[a][b].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid parameter syntax'))
+    expect(mockApp.get).not.toHaveBeenCalled()
+
+    consoleSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should reject file with non-ASCII param name [用户名]', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-non-ascii-param')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-[用户名].js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('only ASCII'))
+    expect(mockApp.get).not.toHaveBeenCalled()
+
+    consoleSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should skip directory with malformed param syntax', async () => {
+    const parentDir = join(process.cwd(), '__tests__', 'controllers-bad-dir-param')
+    const dir = join(parentDir, '[a][b]')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get.ts'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+
+    await autoRouter({ dir: parentDir, prefix: '/api' })(mockApp)
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Skip directory'))
+    expect(mockApp.get).not.toHaveBeenCalled()
+
+    consoleSpy.mockRestore()
+    rmSync(parentDir, { recursive: true, force: true })
+  })
+
   it('should skip file with falsy non-null default export (e.g. false)', async () => {
     const falsyDir = join(process.cwd(), '__tests__', 'controllers-falsy')
     mkdirSync(falsyDir, { recursive: true })

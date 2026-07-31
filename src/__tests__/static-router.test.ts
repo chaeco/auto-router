@@ -117,6 +117,26 @@ describe('staticAutoRouter', () => {
     errorSpy.mockRestore()
   })
 
+  it('should reject file-name [param] syntax in static route paths', async () => {
+    const mockApp: any = { get: jest.fn(), $routes: { publicRoutes: [], protectedRoutes: [], all: [] } }
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    const router = staticAutoRouter({
+      routes: [
+        { method: 'get', path: '/api/users/[id]', handler },
+        { method: 'get', path: '/api/users/:id', handler },
+      ],
+    })
+    await router(mockApp)
+
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Skip route'))
+    expect(mockApp.get).toHaveBeenCalledTimes(1)
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users/:id', handler)
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    errorSpy.mockRestore()
+  })
+
   it('should detect duplicate routes across two staticAutoRouter calls', async () => {
     const mockApp: any = { get: jest.fn(), $routes: undefined }
 

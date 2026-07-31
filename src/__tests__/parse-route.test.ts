@@ -1,4 +1,4 @@
-import { parseRouteName, parseDirSegment } from '../parse-route.js'
+import { parseRouteName, parseDirSegment, validateRouteName, validateDirSegment } from '../parse-route.js'
 
 describe('parseRouteName', () => {
   it('converts [param] to :param', () => {
@@ -64,5 +64,62 @@ describe('parseDirSegment', () => {
 
   it('does not convert hyphens to slashes (directory segments are single units)', () => {
     expect(parseDirSegment('user-posts')).toBe('user-posts')
+  })
+})
+
+describe('validateRouteName', () => {
+  it('accepts valid param syntax', () => {
+    expect(() => validateRouteName('[id]')).not.toThrow()
+    expect(() => validateRouteName('[userId]-posts')).not.toThrow()
+    expect(() => validateRouteName('users-[id]')).not.toThrow()
+    expect(() => validateRouteName('[a]-[b]-[c]')).not.toThrow()
+    expect(() => validateRouteName('[org]-settings-[key]')).not.toThrow()
+    expect(() => validateRouteName('user-info')).not.toThrow()
+    expect(() => validateRouteName('users')).not.toThrow()
+  })
+
+  it('rejects empty parameter brackets []', () => {
+    expect(() => validateRouteName('[]')).toThrow(/Empty parameters/)
+    expect(() => validateRouteName('[a]-[]')).toThrow(/Empty parameters/)
+  })
+
+  it('rejects adjacent params without a separator', () => {
+    expect(() => validateRouteName('[a][b]')).toThrow(/Invalid parameter syntax/)
+  })
+
+  it('rejects unpaired brackets', () => {
+    expect(() => validateRouteName('[id')).toThrow(/Invalid parameter syntax/)
+    expect(() => validateRouteName('id]')).toThrow(/Invalid parameter syntax/)
+  })
+
+  it('rejects non-ASCII parameter names', () => {
+    expect(() => validateRouteName('[用户名]')).toThrow(/only ASCII/)
+  })
+
+  it('rejects hyphens or dots inside a parameter name', () => {
+    expect(() => validateRouteName('[user-id]')).toThrow(/only ASCII/)
+    expect(() => validateRouteName('[v1.2]')).toThrow(/only ASCII/)
+  })
+})
+
+describe('validateDirSegment', () => {
+  it('accepts a whole-segment [param] and plain names', () => {
+    expect(() => validateDirSegment('[userId]')).not.toThrow()
+    expect(() => validateDirSegment('users')).not.toThrow()
+    expect(() => validateDirSegment('user-posts')).not.toThrow()
+  })
+
+  it('rejects empty brackets', () => {
+    expect(() => validateDirSegment('[]')).toThrow(/Empty parameters/)
+  })
+
+  it('rejects params glued to static text or multiple params', () => {
+    expect(() => validateDirSegment('users[id]')).toThrow(/single \[id\] segment/)
+    expect(() => validateDirSegment('[a][b]')).toThrow(/single \[id\] segment/)
+  })
+
+  it('rejects non-ASCII or hyphenated parameter names', () => {
+    expect(() => validateDirSegment('[用户名]')).toThrow(/only ASCII/)
+    expect(() => validateDirSegment('[user-id]')).toThrow(/only ASCII/)
   })
 })

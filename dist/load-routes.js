@@ -3,7 +3,7 @@ import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import { isRouteConfig } from './handler.js';
 import { matchesFilter } from './matches-filter.js';
-import { parseRouteName, parseDirSegment } from './parse-route.js';
+import { validateRouteName, parseRouteName, parseDirSegment } from './parse-route.js';
 // Helper function for logging
 // 日志输出辅助函数
 function createLogger(onLog, logging) {
@@ -93,15 +93,19 @@ export async function loadRoutes(app, options) {
                 // 文件名必须是有效的 HTTP 方法或以 method- 开头 (${methods.join('|')})
             };
         }
-        // Check parameter format
-        // 检查参数格式
-        const hasInvalidParams = /\[\]/.test(nameWithoutExt);
-        if (hasInvalidParams) {
-            return {
-                valid: false,
-                error: 'Empty parameters not allowed [], use [id] instead of []',
-                // 不允许空参数 [], 例如：[id] 而不是 []
-            };
+        // Validate parameter syntax in the route name (throws on malformed [param])
+        // 校验路由名中的参数语法（遇到非法 [param] 会抛错）
+        const routeName = nameWithoutExt === method ? '' : nameWithoutExt.substring(method.length + 1);
+        if (routeName) {
+            try {
+                validateRouteName(routeName);
+            }
+            catch (err) {
+                return {
+                    valid: false,
+                    error: err instanceof Error ? err.message : String(err),
+                };
+            }
         }
         return { valid: true, method };
     }
@@ -134,9 +138,17 @@ export async function loadRoutes(app, options) {
                 // Validate directory name (only the new segment, not the full absolute path)
                 // 验证目录名（只检查新增的这一段，而非完整绝对路径）
                 validateDirPath(file);
-                // Convert [param] in directory names to :param, e.g. [userId] -> :userId
-                // 转换目录名中的 [param] 为 :param，如 [userId] -> :userId
-                const dirSegment = parseDirSegment(file);
+                // Validate & convert [param] in directory names to :param, e.g. [userId] -> :userId
+                // 校验并转换目录名中的 [param] 为 :param，如 [userId] -> :userId
+                let dirSegment;
+                try {
+                    dirSegment = parseDirSegment(file);
+                }
+                catch (err) {
+                    log('error', `❌ Skip directory: ${filePath}`);
+                    log('error', `   ❌ ${err instanceof Error ? err.message : String(err)}`);
+                    continue;
+                }
                 // Recursively scan subdirectory
                 // 递归扫描子目录
                 try {

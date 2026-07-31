@@ -49,7 +49,7 @@ A hyphen `-` is only converted to `/` when it is adjacent to a dynamic parameter
 | Check | Valid | Invalid |
 |-------|-------|---------|
 | Starts with `{method}-` or exactly `{method}` | `get-users.ts`, `get.ts` | `users-get.ts` |
-| No empty brackets | `[id]` | `[]` |
+| Param syntax — brackets paired, params `-`-separated, ASCII name (`[A-Za-z0-9_]`) | `[id]`, `[a]-[b]`, `[userId]-posts` | `[]`, `[a][b]`, `[id`, `id]`, `[user-id]`, `[用户名]` |
 | Only `.ts`, `.js` files (excluding `.d.ts`) | `get-users.ts` | `types.d.ts` |
 
 ### Export validation (strict mode)
@@ -67,6 +67,7 @@ A hyphen `-` is only converted to `/` when it is adjacent to a dynamic parameter
 ### Directory validation
 
 - Directory names that match HTTP methods (`get`, `post`, `put`, `delete`, `patch`, `head`, `options`) produce a **warning** but are not blocked
+- Directory `[param]` segments must span the whole segment (`[userId]/` valid; `users[id]/`, `[a][b]/` rejected) and follow the same ASCII-name rule
 - Unreadable directories (permission denied) are **skipped** with a warning; sibling files continue scanning
 - Broken symlinks are **skipped** with a warning
 

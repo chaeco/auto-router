@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Parameter name validation** — `[param]` names are now validated instead of silently producing broken routes
+  - Added `validateRouteName` / `validateDirSegment` to `parse-route.ts`; `parseRouteName` / `parseDirSegment` now throw on invalid syntax
+  - Rejected: empty `[]`, adjacent params without a `-` separator (`[a][b]`), unpaired brackets, non-ASCII or hyphenated param names (`[user-id]`, `[用户名]`)
+  - Directory params must span the whole segment (`[userId]/` valid; `users[id]/`, `[a][b]/` rejected)
+  - Enforced across all three registration paths: `autoRouter` (file scan), `generateManifest` (Workers CLI), and `staticAutoRouter` (bracket syntax in `path` rejected — use `:param` form)
+  - Malformed files/dirs are skipped with an error log instead of registering a broken route
+
+### Tested
+
+- 175 tests passing (15 new: validation cases in `parse-route`, rejection paths in `auto-router`, `build-worker-manifest`, and `static-router`)
+
 ## [0.0.14] - 2026-07-31
 
 ### Added

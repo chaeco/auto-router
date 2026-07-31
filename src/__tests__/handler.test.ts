@@ -31,6 +31,50 @@ describe('createHandler', () => {
     expect(config.meta).toBeUndefined()
     expect(isRouteConfig(config)).toBe(true)
   })
+
+  it('should store middlewares passed as third argument', () => {
+    const handler = async () => { }
+    const middleware = async (_ctx: any, next: () => Promise<any>) => { await next() }
+
+    const config = createHandler(handler, undefined, [middleware])
+
+    expect(config.handler).toBe(handler)
+    expect(config.meta).toBeUndefined()
+    expect(config.middlewares).toEqual([middleware])
+    expect(isRouteConfig(config)).toBe(true)
+  })
+
+  it('should normalize empty middlewares array [] to undefined', () => {
+    const handler = async () => { }
+
+    const config = createHandler(handler, undefined, [])
+
+    expect(config.handler).toBe(handler)
+    expect(config.middlewares).toBeUndefined()
+    expect(isRouteConfig(config)).toBe(true)
+  })
+
+  it('should keep middlewares undefined when not provided', () => {
+    const handler = async () => { }
+
+    const config = createHandler(handler)
+
+    expect(config.handler).toBe(handler)
+    expect(config.middlewares).toBeUndefined()
+  })
+
+  it('should support meta and middlewares together', () => {
+    const handler = async () => { }
+    const middleware = async (_ctx: any, next: () => Promise<any>) => { await next() }
+    const meta: RouteMeta = { requiresAuth: true }
+
+    const config = createHandler(handler, meta, [middleware])
+
+    expect(config.handler).toBe(handler)
+    expect(config.meta).toEqual(meta)
+    expect(config.middlewares).toEqual([middleware])
+    expect(isRouteConfig(config)).toBe(true)
+  })
 })
 
 describe('isRouteConfig', () => {

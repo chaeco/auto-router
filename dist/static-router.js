@@ -61,12 +61,14 @@ export function staticAutoRouter(options) {
             registeredRoutes.add(routeKey);
             let handler = rawHandler;
             let routeMeta;
+            let routeMiddlewares;
             if (handler === undefined || handler === null) {
                 log('error', `❌ Skip route ${routePath}: handler is null/undefined`);
                 continue;
             }
             if (isRouteConfig(handler)) {
                 routeMeta = handler.meta;
+                routeMiddlewares = handler.middlewares;
                 handler = handler.handler;
             }
             else if (typeof handler === 'function') {
@@ -76,6 +78,7 @@ export function staticAutoRouter(options) {
             else if (typeof handler === 'object' && handler !== null && typeof handler.handler === 'function') {
                 const raw = handler;
                 routeMeta = raw.meta;
+                routeMiddlewares = raw.middlewares;
                 handler = raw.handler;
             }
             else {
@@ -126,7 +129,7 @@ export function staticAutoRouter(options) {
             else {
                 app.$routes.publicRoutes.push({ method: normalizedMethod.toUpperCase(), path: routePath });
             }
-            app[normalizedMethod](routePath, handler);
+            app[normalizedMethod](routePath, ...(routeMiddlewares ?? []), handler);
         }
         // Flush sorted route registration logs
         // 排序后输出所有路由注册日志

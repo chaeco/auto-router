@@ -535,6 +535,45 @@ describe('autoRouter', () => {
     rmSync(nonStrictDir, { recursive: true, force: true })
   })
 
+  it('should register route-level middlewares from createHandler before the handler', async () => {
+    const mwDir = join(process.cwd(), '__tests__', 'controllers-middleware')
+    mkdirSync(mwDir, { recursive: true })
+    // Simulate createHandler output with middlewares: $__isRouteConfig marks it as a RouteConfig
+    writeFileSync(
+      join(mwDir, 'post-login.js'),
+      `export default {
+  handler: async (ctx) => { ctx.res.body = { ok: true } },
+  meta: { description: 'login' },
+  middlewares: [async (ctx, next) => { ctx.req._seen = true; await next() }],
+  $__isRouteConfig: true
+}`
+    )
+
+    const mockApp: any = {
+      get: jest.fn(),
+      post: jest.fn(),
+      $routes: undefined,
+      $registeredRoutes: undefined,
+    }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({
+      dir: mwDir,
+      prefix: '/api',
+    })(mockApp)
+
+    // Registration order: middleware(s) before the handler
+    const postArgs = mockApp.post.mock.calls[0]
+    expect(postArgs[0]).toBe('/api/login')
+    expect(typeof postArgs[1]).toBe('function') // middleware
+    expect(typeof postArgs[2]).toBe('function') // handler
+    // The middleware and handler are distinct functions
+    expect(postArgs[1]).not.toBe(postArgs[2])
+
+    logSpy.mockRestore()
+    rmSync(mwDir, { recursive: true, force: true })
+  })
+
   // ---------------------------------------------------------------------------
   // Additional coverage tests
   // ---------------------------------------------------------------------------

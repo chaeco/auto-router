@@ -34,7 +34,7 @@ export default async (ctx) => {
 
 **Rule of thumb:** ≤3 path segments → flat file. >3 segments → nested directories. See [REFERENCE.md](REFERENCE.md) for the full conversion algorithm.
 
-### Exports — two forms only
+### Exports — three forms
 
 ```typescript
 // Form 1: Pure function (inherits global defaultRequiresAuth)
@@ -43,6 +43,14 @@ export default async (ctx) => { ... }
 // Form 2: createHandler (explicit per-route meta)
 import { createHandler } from '@chaeco/auto-router'
 export default createHandler(async (ctx) => { ... }, { requiresAuth: true })
+
+// Form 3: createHandler + route-level middlewares (e.g. @hoajs/zod)
+import { z, zodValidator } from '@hoajs/zod'
+export default createHandler(
+  async (ctx) => { ... },
+  { requiresAuth: true },
+  [zodValidator({ body: z.object({ username: z.string() }) })]
+)
 ```
 
 ### Auth — three priority tiers

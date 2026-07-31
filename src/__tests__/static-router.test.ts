@@ -180,6 +180,54 @@ describe('staticAutoRouter', () => {
     expect(mockApp.$routes!.protectedRoutes).toHaveLength(1)
   })
 
+  it('should register createHandler middlewares before the handler', async () => {
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const middleware = async () => {}
+
+    await staticAutoRouter({
+      routes: [
+        { method: 'get', path: '/api/secure', handler: createHandler(handler, undefined, [middleware]) },
+      ],
+    })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/secure', middleware, handler)
+  })
+
+  it('should register plain object middlewares before the handler', async () => {
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const middleware = async () => {}
+
+    await staticAutoRouter({
+      routes: [
+        {
+          method: 'get',
+          path: '/api/test',
+          handler: { handler, middlewares: [middleware] },
+        },
+      ],
+    })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/test', middleware, handler)
+  })
+
+  it('should register route-level middlewares in order', async () => {
+    const mockApp: any = { post: jest.fn(), $routes: undefined }
+    const first = async () => {}
+    const second = async () => {}
+
+    await staticAutoRouter({
+      routes: [
+        {
+          method: 'post',
+          path: '/api/login',
+          handler: { handler, middlewares: [first, second] },
+        },
+      ],
+    })(mockApp)
+
+    expect(mockApp.post).toHaveBeenCalledWith('/api/login', first, second, handler)
+  })
+
   it('should accept plain object with handler in non-strict mode', async () => {
     const mockApp: any = { get: jest.fn(), $routes: undefined }
 

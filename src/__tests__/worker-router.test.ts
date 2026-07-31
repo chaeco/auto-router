@@ -196,6 +196,103 @@ describe('createWorkerRouter', () => {
     expect(body).toEqual({ unwrapped: true })
   })
 
+  it('runs middlewares before the handler in order', async () => {
+    const order: string[] = []
+    const handler = async (ctx: WorkerRouteContext) => {
+      order.push('handler')
+      return { ok: true }
+    }
+    const mw1 = async (ctx: WorkerRouteContext, next: () => Promise<unknown>) => {
+      order.push('mw1')
+      await next()
+      order.push('mw1-after')
+    }
+    const mw2 = async (ctx: WorkerRouteContext, next: () => Promise<unknown>) => {
+      order.push('mw2')
+      await next()
+      order.push('mw2-after')
+    }
+    const routes: WorkerManifestRoute[] = [{ pattern: '/api/users', method: 'GET', handler, middlewares: [mw1, mw2] }]
+    const router = createWorkerRouter({ routes })
+
+    const res = await router.fetch(new Request('http://localhost/api/users', { method: 'GET' }), {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(200)
+    expect(order).toEqual(['mw1', 'mw2', 'handler', 'mw2-after', 'mw1-after'])
+  })
+
+  it('stops the chain when a middleware short-circuits without calling next', async () => {
+    let handlerCalled = false
+    const handler = async () => {
+      handlerCalled = true
+      return { ok: true }
+    }
+    const blocking = async (ctx: WorkerRouteContext) => {
+      ctx.res.status = 403
+      ctx.res.body = 'Forbidden'
+      // deliberately no next() call
+    }
+    const routes: WorkerManifestRoute[] = [{ pattern: '/api/users', method: 'GET', handler, middlewares: [blocking] }]
+    const router = createWorkerRouter({ routes })
+
+    const res = await router.fetch(new Request('http://localhost/api/users', { method: 'GET' }), {}, {} as ExecutionContext)
+
+    expect(handlerCalled).toBe(false)
+    expect(res.status).toBe(403)
+    expect(await res.text()).toBe('Forbidden')
+  })
+
+  it('unwraps createHandler middlewares alongside route-level middlewares', async () => {
+    const order: string[] = []
+    const handler = createHandler(
+      async () => {
+        order.push('handler')
+        return { ok: true }
+      },
+      { requiresAuth: true },
+      [
+        async (ctx: WorkerRouteContext, next: () => Promise<unknown>) => {
+          order.push('config-mw')
+          await next()
+        },
+      ]
+    )
+    const routeMw = async (ctx: WorkerRouteContext, next: () => Promise<unknown>) => {
+      order.push('route-mw')
+      await next()
+    }
+    const routes: WorkerManifestRoute[] = [{ pattern: '/api/users', method: 'GET', handler, middlewares: [routeMw] }]
+    const router = createWorkerRouter({ routes })
+
+    const res = await router.fetch(new Request('http://localhost/api/users', { method: 'GET' }), {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(200)
+    // createHandler middlewares run first, then route-level middlewares, then handler
+    expect(order).toEqual(['config-mw', 'route-mw', 'handler'])
+  })
+
+  it('rejects non-function middlewares with TypeError', async () => {
+    const routes: WorkerManifestRoute[] = [
+      { pattern: '/api/invalid', method: 'GET', handler: async () => 'OK', middlewares: ['not-a-middleware' as any] }
+    ]
+
+    let errorCaptured: unknown = null
+    const onError = (err: unknown) => {
+      errorCaptured = err
+      return new Response('Bad Middleware', { status: 500 })
+    }
+
+    const router = createWorkerRouter({ routes, onError })
+
+    const res = await router.fetch(new Request('http://localhost/api/invalid', { method: 'GET' }), {}, {} as ExecutionContext)
+
+    expect(res.status).toBe(500)
+    expect(await res.text()).toBe('Bad Middleware')
+    expect(errorCaptured).toBeInstanceOf(TypeError)
+    expect((errorCaptured as Error).message).toContain('Middleware')
+    expect((errorCaptured as Error).message).toContain('not a function')
+  })
+
   it('matches methods case-insensitively', async () => {
     let called = false
     const handler = async () => { called = true; return 'OK' }

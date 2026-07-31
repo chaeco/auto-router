@@ -21,6 +21,18 @@ export type RouteHandler<TCtx = any, TRes = void> =
   : (req: TCtx, res: TRes) => Promise<any> | any
 
 /**
+ * Route-level middleware type
+ * 路由级中间件类型
+ *
+ * Follows the Koa-style `(ctx, next)` signature that Hoa uses for middleware,
+ * so framework middleware like `@hoajs/zod`'s `zodValidator()` can be attached
+ * to a single route via `createHandler`'s third argument.
+ * 采用 Hoa / Koa 风格 `(ctx, next)` 签名，使框架中间件（如 `@hoajs/zod` 的 `zodValidator()`）
+ * 可以通过 `createHandler` 的第三参数挂载到单条路由上。
+ */
+export type RouteMiddleware<TCtx = any> = (ctx: TCtx, next: () => Promise<any> | any) => Promise<any> | any
+
+/**
  * Route metadata interface
  * 路由元数据接口
  * Used to define additional properties of routes, such as permission authentication requirements
@@ -90,6 +102,14 @@ export interface RouteConfig<TCtx = any, TRes = void> {
    * 路由元数据
    */
   meta?: RouteMeta
+
+  /**
+   * Route-level middleware chain, registered before the handler
+   * 路由级中间件链，注册在 handler 之前
+   * e.g. `zodValidator` from `@hoajs/zod`, `auth` middleware, etc.
+   * 例如 `@hoajs/zod` 的 `zodValidator`、鉴权中间件等
+   */
+  middlewares?: RouteMiddleware<TCtx>[]
 }
 
 /**
@@ -107,14 +127,31 @@ export interface RouteConfig<TCtx = any, TRes = void> {
  *    export default createHandler(async (ctx) => {
  *      ctx.body = { success: true }
  *    }, { requiresAuth: true })
+ *
+ * Usage 3: createHandler with route-level middlewares (e.g. @hoajs/zod)
+ * 用法 3：createHandler + 路由级中间件（如 @hoajs/zod）
+ *    export default createHandler(
+ *      async (ctx) => {
+ *        ctx.body = { success: true }
+ *      },
+ *      { requiresAuth: true },
+ *      [zodValidator({ body: LoginSchema })]
+ *    )
  */
 
-export function createHandler<TCtx = any, TRes = void>(handler: RouteHandler<TCtx, TRes>, meta?: RouteMeta): RouteConfig<TCtx, TRes> {
+export function createHandler<TCtx = any, TRes = void>(
+  handler: RouteHandler<TCtx, TRes>,
+  meta?: RouteMeta,
+  middlewares?: RouteMiddleware<TCtx>[]
+): RouteConfig<TCtx, TRes> {
   const config: RouteConfig<TCtx, TRes> & { $__isRouteConfig: boolean } = {
     handler,
     // Normalize empty object {} to undefined so callers can safely use `if (config.meta)`
     // 将空对象 {} 归一化为 undefined，使调用方可以安全地用 `if (config.meta)` 判断
     meta: (meta && Object.keys(meta).length > 0) ? meta : undefined,
+    // Normalize empty array [] to undefined so callers can safely use `if (config.middlewares)`
+    // 将空数组 [] 归一化为 undefined，使调用方可以安全地用 `if (config.middlewares)` 判断
+    middlewares: (middlewares && middlewares.length > 0) ? middlewares : undefined,
     $__isRouteConfig: true, // Mark this as an object created by createHandler
     // 标记这是 createHandler 创建的对象
   }

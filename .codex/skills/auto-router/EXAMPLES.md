@@ -294,6 +294,8 @@ app.extend(autoRouter({
 
 auto-router does not validate route parameters — all `[param]` values are strings. Validate and coerce them in your handler, or use zod for schema-based validation.
 
+### Option A: validate in the handler (no framework dependency)
+
 ```typescript
 import { z } from 'zod'
 import { createHandler } from '@chaeco/auto-router'
@@ -341,3 +343,32 @@ export default createHandler(
   { description: 'Create post', tags: ['Posts'] }
 )
 ```
+
+### Option B: route-level middleware via `createHandler` third arg (`@hoajs/zod`)
+
+On Hoa, attach `@hoajs/zod`'s middleware directly to the route. It runs before the
+handler; a validation failure short-circuits with a 400 and the handler never runs.
+
+```typescript
+import { z, zodValidator } from '@hoajs/zod'
+import { createHandler } from '@chaeco/auto-router'
+
+const PostSchema = z.object({
+  title: z.string().min(1).max(200),
+  content: z.string().optional(),
+})
+
+// controllers/users/[userId]/posts/post.ts — body validation as middleware
+export default createHandler(
+  async (ctx) => {
+    // ctx.req.body is already validated & coerced
+    ctx.res.status = 201
+    ctx.res.body = { id: Date.now(), ...ctx.req.body }
+  },
+  { description: 'Create post', tags: ['Posts'] },
+  [zodValidator({ body: PostSchema })]
+)
+```
+
+Works with file-based `autoRouter`, `staticAutoRouter`, and `createWorkerRouter`
+(Workers run middlewares as a Koa-style chain).

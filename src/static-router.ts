@@ -1,4 +1,4 @@
-import { isRouteConfig, type RouteInfo } from './handler.js'
+import { isRouteConfig, type RouteInfo, type RouteMiddleware } from './handler.js'
 import { matchesFilter } from './matches-filter.js'
 
 /** Static route entry — callers statically import handlers and declare method/path. */
@@ -117,6 +117,7 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
 
       let handler = rawHandler
       let routeMeta: { requiresAuth?: boolean } | undefined
+      let routeMiddlewares: RouteMiddleware[] | undefined
 
       if (handler === undefined || handler === null) {
         log('error', `❌ Skip route ${routePath}: handler is null/undefined`)
@@ -125,13 +126,15 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
 
       if (isRouteConfig(handler)) {
         routeMeta = handler.meta
+        routeMiddlewares = handler.middlewares
         handler = handler.handler
       } else if (typeof handler === 'function') {
         // handler is a plain function — no op needed
         // handler 是纯函数 — 无需额外操作
       } else if (typeof handler === 'object' && handler !== null && typeof (handler as Record<string, unknown>).handler === 'function') {
-        const raw = handler as { handler: Function; meta?: { requiresAuth?: boolean } }
+        const raw = handler as { handler: Function; meta?: { requiresAuth?: boolean }; middlewares?: RouteMiddleware[] }
         routeMeta = raw.meta
+        routeMiddlewares = raw.middlewares
         handler = raw.handler
       } else {
         log('error', `❌ Skip route ${routePath}: invalid handler type (expected function or createHandler result)`)
@@ -182,7 +185,7 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
         app.$routes.publicRoutes.push({ method: normalizedMethod.toUpperCase(), path: routePath })
       }
 
-      app[normalizedMethod](routePath, handler)
+      app[normalizedMethod](routePath, ...(routeMiddlewares ?? []), handler)
     }
 
     // Flush sorted route registration logs

@@ -29,10 +29,14 @@ export function createWorkerRouter(options) {
     // Unwrap createHandler results once at construction time
     const resolved = routes.map(route => {
         let handler = route.handler;
+        let middlewares = route.middlewares;
         if (isRouteConfig(handler)) {
+            // createHandler middlewares run before route-level middlewares
+            // createHandler 中间件先于路由级中间件执行
+            middlewares = (handler.middlewares ?? []).concat(route.middlewares ?? []);
             handler = handler.handler;
         }
-        return { pattern: route.pattern, method: route.method.toUpperCase(), handler };
+        return { pattern: route.pattern, method: route.method.toUpperCase(), handler, middlewares };
     });
     return {
         async fetch(req, env, ctx) {
@@ -44,7 +48,7 @@ export function createWorkerRouter(options) {
                     continue;
                 const result = matchRoute(route.pattern, pathname);
                 if (result) {
-                    matched = { handler: route.handler, params: result.params };
+                    matched = { handler: route.handler, middlewares: route.middlewares, params: result.params };
                     break;
                 }
             }
@@ -68,7 +72,25 @@ export function createWorkerRouter(options) {
                 if (typeof matched.handler !== 'function') {
                     throw new TypeError(`Handler for ${req.method} ${pathname} is not a function (got ${typeof matched.handler})`);
                 }
-                result = await matched.handler(routeCtx);
+                const middlewares = matched.middlewares ?? [];
+                for (const middleware of middlewares) {
+                    if (typeof middleware !== 'function') {
+                        throw new TypeError(`Middleware for ${req.method} ${pathname} is not a function (got ${typeof middleware})`);
+                    }
+                }
+                // Koa-style chain: each middleware receives (ctx, next); the last next
+                // invokes the route handler. A middleware that short-circuits (no next
+                // call, e.g. zodValidator on a 400) stops the chain without the handler.
+                // Koa 风格中间件链：每个中间件接收 (ctx, next)，最后的 next 调用路由 handler；
+                // 短路中间件（不调用 next，如 zodValidator 校验失败时）会终止链路，不再执行 handler。
+                const dispatch = async (i) => {
+                    if (i === middlewares.length) {
+                        return matched.handler(routeCtx);
+                    }
+                    const middleware = middlewares[i];
+                    return middleware(routeCtx, () => dispatch(i + 1));
+                };
+                result = await dispatch(0);
                 // Response serialization precedence
                 if (result instanceof Response)
                     return result;

@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from 'fs'
 import { join, resolve } from 'path'
 import { pathToFileURL } from 'url'
-import { isRouteConfig, type RouteMeta, type RouteInfo } from './handler.js'
+import { isRouteConfig, type RouteMeta, type RouteInfo, type RouteMiddleware } from './handler.js'
 import { matchesFilter } from './matches-filter.js'
 import { parseRouteName, parseDirSegment } from './parse-route.js'
 
@@ -250,6 +250,7 @@ export async function loadRoutes(
           .then(module => {
             let handler = module.default
             let routeMeta: RouteMeta | undefined
+            let middlewares: RouteMiddleware[] | undefined
 
             // Skip if no default export
             // 没有默认导出则跳过
@@ -315,9 +316,10 @@ export async function loadRoutes(
             // Check if it's a createHandler wrapped object
             // 检查是否为 createHandler 包装的对象
             if (isRouteConfig(handler)) {
-              // Way 2: createHandler wrapped { handler, meta }
-              // 方式 2: createHandler 包装 { handler, meta }
+              // Way 2: createHandler wrapped { handler, meta, middlewares }
+              // 方式 2: createHandler 包装 { handler, meta, middlewares }
               routeMeta = handler.meta
+              middlewares = handler.middlewares
               handler = handler.handler
             } else if (typeof handler === 'function') {
               // Way 1: Pure function - normal
@@ -338,6 +340,7 @@ export async function loadRoutes(
                 log('warn', `   ⚠️  Detected non-recommended export method (non-strict mode)`)
                 // 检测到非推荐的导出方式（非严格模式）
                 routeMeta = handler.meta
+                middlewares = handler.middlewares
                 handler = handler.handler
                 // handler is now a valid function; fall through to route registration
                 // handler 现在是有效函数，继续执行路由注册
@@ -429,7 +432,7 @@ export async function loadRoutes(
               app.$routes.publicRoutes.push({ method: method.toUpperCase(), path: routePath })
             }
 
-            app[method](routePath, handler)
+            app[method](routePath, ...(middlewares ?? []), handler)
           })
           .catch((err: unknown) => {
             log('error', `❌ Failed to load route: ${filePath}`)

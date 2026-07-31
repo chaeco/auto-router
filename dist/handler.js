@@ -13,13 +13,26 @@
  *    export default createHandler(async (ctx) => {
  *      ctx.body = { success: true }
  *    }, { requiresAuth: true })
+ *
+ * Usage 3: createHandler with route-level middlewares (e.g. @hoajs/zod)
+ * 用法 3：createHandler + 路由级中间件（如 @hoajs/zod）
+ *    export default createHandler(
+ *      async (ctx) => {
+ *        ctx.body = { success: true }
+ *      },
+ *      { requiresAuth: true },
+ *      [zodValidator({ body: LoginSchema })]
+ *    )
  */
-export function createHandler(handler, meta) {
+export function createHandler(handler, meta, middlewares) {
     const config = {
         handler,
         // Normalize empty object {} to undefined so callers can safely use `if (config.meta)`
         // 将空对象 {} 归一化为 undefined，使调用方可以安全地用 `if (config.meta)` 判断
         meta: (meta && Object.keys(meta).length > 0) ? meta : undefined,
+        // Normalize empty array [] to undefined so callers can safely use `if (config.middlewares)`
+        // 将空数组 [] 归一化为 undefined，使调用方可以安全地用 `if (config.middlewares)` 判断
+        middlewares: (middlewares && middlewares.length > 0) ? middlewares : undefined,
         $__isRouteConfig: true, // Mark this as an object created by createHandler
         // 标记这是 createHandler 创建的对象
     };

@@ -1,3 +1,4 @@
+import { type RouteMiddleware } from './handler.js';
 type ExecutionContext = unknown;
 export interface WorkerRouteContext<TEnv = unknown, TCtx = ExecutionContext> {
     req: Request;
@@ -17,6 +18,8 @@ export interface WorkerManifestRoute<TEnv = unknown, TCtx = ExecutionContext> {
     method: string;
     /** Route handler function or createHandler result */
     handler: unknown;
+    /** Route-level middleware chain, run before the handler */
+    middlewares?: RouteMiddleware<WorkerRouteContext<TEnv, TCtx>>[];
 }
 export interface WorkerRouterOptions<TEnv = unknown, TCtx = ExecutionContext> {
     routes: WorkerManifestRoute<TEnv, TCtx>[];

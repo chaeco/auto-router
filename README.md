@@ -55,6 +55,7 @@ This copies skill files into your project's `.claude/skills/auto-router/` and `.
 - [Export Methods](#export-methods)
   - [Method 1: Pure function](#method-1-pure-function)
   - [Method 2: createHandler wrapper](#method-2-createhandler-wrapper)
+  - [Method 3: createHandler with route-level middlewares](#method-3-createhandler-with-route-level-middlewares)
   - [Strict mode](#strict-mode)
 - [Auth & Permissions](#auth--permissions)
   - [Configuration modes](#configuration-modes)
@@ -85,7 +86,7 @@ This copies skill files into your project's `.claude/skills/auto-router/` and `.
   - [autoRouter(options)](#autorouteroptions)
   - [staticAutoRouter(options)](#staticautorouteroptions)
   - [createWorkerRouter(options)](#createworkerrouteroptions)
-  - [createHandler(handler, meta?)](#createhandlerhandler-meta)
+  - [createHandler(handler, meta?, middlewares?)](#createhandlerhandler-meta-middlewares)
   - [isRouteConfig(obj)](#isrouteconfigobj)
   - [Exported types](#exported-types)
 - [License](#license)
@@ -266,6 +267,42 @@ export default createHandler(
 ```
 
 The `meta` object accepts `requiresAuth`, `description`, and any custom `[key: string]: any` fields.
+
+### Method 3: createHandler with route-level middlewares
+
+`createHandler` accepts an optional third argument — a list of Koa/Hoa-style
+middlewares `(ctx, next) => ...` that run **before** the route handler. This is
+the slot for framework validation middleware like `@hoajs/zod`:
+
+```typescript
+import { z, zodValidator } from '@hoajs/zod'
+import { createHandler } from '@chaeco/auto-router'
+
+const LoginSchema = z.object({
+  username: z.string().min(1, 'username is required'),
+  password: z.string().min(1, 'password is required'),
+})
+
+export default createHandler(
+  async (ctx) => {
+    // ctx.req.body is already validated & parsed by zodValidator
+    ctx.res.body = { success: true }
+  },
+  { description: 'User login' },
+  [zodValidator({ body: LoginSchema })]
+)
+```
+
+- Registered as `app[method](path, ...middlewares, handler)` — matches the
+  variadic middleware signature Hoa, Koa and Express all use.
+- Works for every registration path: file-based `autoRouter`, `staticAutoRouter`,
+  and `createWorkerRouter`.
+- In Workers, middlewares run as a Koa-style chain: each receives `(ctx, next)`,
+  the final `next` invokes the handler; a middleware that short-circuits (no
+  `next()` call, e.g. a `zodValidator` 400) stops the chain without calling the
+  handler.
+- Middlewares are framework-agnostic — attach `@hoajs/zod` on Hoa,
+  `express-validator` on Express, or any `(ctx, next)` middleware elsewhere.
 
 ### Strict mode
 
@@ -970,7 +1007,7 @@ id = "your-kv-namespace-id"
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@chaeco/auto-router": "^0.0.13"
+    "@chaeco/auto-router": "^0.0.14"
   }
 }
 ```
@@ -1122,16 +1159,17 @@ npx auto-router-build-manifest <controllersDir> <outputFile> [--prefix /api] [--
 
 See [Cloudflare Workers](#cloudflare-workers) section for complete usage.
 
-### `createHandler(handler, meta?)`
+### `createHandler(handler, meta?, middlewares?)`
 
 ```typescript
 createHandler<TCtx = any, TRes = void>(
   handler: RouteHandler<TCtx, TRes>,
-  meta?: RouteMeta
+  meta?: RouteMeta,
+  middlewares?: RouteMiddleware<TCtx>[]
 ): RouteConfig<TCtx, TRes>
 ```
 
-Wraps a handler function with metadata. An empty `{}` meta is normalized to `undefined`.
+Wraps a handler function with metadata. An empty `{}` meta is normalized to `undefined`, and an empty `[]` middlewares is normalized to `undefined`.
 
 **`RouteMeta` fields:**
 
@@ -1140,6 +1178,15 @@ Wraps a handler function with metadata. An empty `{}` meta is normalized to `und
 | `requiresAuth` | `boolean` | Whether auth is required |
 | `description` | `string` | Human-readable route description |
 | `[key: string]` | `any` | Any custom metadata |
+
+**`RouteMiddleware`:**
+
+```typescript
+type RouteMiddleware<TCtx = any> =
+  (ctx: TCtx, next: () => Promise<any> | any) => Promise<any> | any
+```
+
+Koa/Hoa-style route-level middleware. Registered before the handler — see [Method 3](#method-3-createhandler-with-route-level-middlewares).
 
 ### `isRouteConfig(obj)`
 
@@ -1152,7 +1199,7 @@ Returns `true` if `obj` was created by `createHandler()`. Useful for type-narrow
 ### Exported types
 
 ```typescript
-export type { RouteHandler, RouteMeta, RouteConfig, RouteInfo, AppRoutesRegistry } from '@chaeco/auto-router'
+export type { RouteHandler, RouteMiddleware, RouteMeta, RouteConfig, RouteInfo, AppRoutesRegistry } from '@chaeco/auto-router'
 export type { StaticRoute, StaticAutoRouterOptions } from '@chaeco/auto-router'
 export type { WorkerManifestRoute, WorkerRouteContext, WorkerRouterOptions } from '@chaeco/auto-router/worker-manifest'
 ```

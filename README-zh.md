@@ -55,6 +55,7 @@ npx auto-router-init-skills
 - [导出方式](#导出方式)
   - [方式 1：纯函数](#方式-1纯函数)
   - [方式 2：createHandler 包装](#方式-2createhandler-包装)
+  - [方式 3：createHandler + 路由级中间件](#方式-3createhandler--路由级中间件)
   - [严格模式](#严格模式)
 - [权限与认证](#权限与认证)
   - [配置模式](#配置模式)
@@ -86,7 +87,7 @@ npx auto-router-init-skills
   - [autoRouter(options)](#autorouteroptions)
   - [staticAutoRouter(options)](#staticautorouteroptions)
   - [createWorkerRouter(options)](#createworkerrouteroptions)
-  - [createHandler(handler, meta?)](#createhandlerhandler-meta)
+  - [createHandler(handler, meta?, middlewares?)](#createhandlerhandler-meta-middlewares)
   - [isRouteConfig(obj)](#isrouteconfigobj)
   - [导出类型](#导出类型)
 - [许可证](#许可证)
@@ -267,6 +268,34 @@ export default createHandler(
 ```
 
 `meta` 对象接受 `requiresAuth`、`description` 及任意 `[key: string]: any` 自定义字段。
+
+### 方式 3：createHandler + 路由级中间件
+
+`createHandler` 还接受第三个可选参数 —— Koa/Hoa 风格中间件数组 `(ctx, next) => ...`，会在路由 handler **之前**执行。这是接入框架校验中间件（如 `@hoajs/zod`）的槽位：
+
+```typescript
+import { z, zodValidator } from '@hoajs/zod'
+import { createHandler } from '@chaeco/auto-router'
+
+const LoginSchema = z.object({
+  username: z.string().min(1, 'username is required'),
+  password: z.string().min(1, 'password is required'),
+})
+
+export default createHandler(
+  async (ctx) => {
+    // ctx.req.body 已经被 zodValidator 校验并解析
+    ctx.res.body = { success: true }
+  },
+  { description: '用户登录' },
+  [zodValidator({ body: LoginSchema })]
+)
+```
+
+- 注册为 `app[method](path, ...middlewares, handler)` —— 与 Hoa、Koa、Express 的可变参数中间件签名一致。
+- 所有注册路径都生效：文件式 `autoRouter`、`staticAutoRouter`、`createWorkerRouter`。
+- 在 Workers 中，中间件以 Koa 风格链执行：每个中间件接收 `(ctx, next)`，最后的 `next` 调用 handler；短路中间件（不调用 `next()`，如 `zodValidator` 校验失败返回 400）会终止链路，不再执行 handler。
+- 中间件与框架无关 —— 在 Hoa 上挂 `@hoajs/zod`、在 Express 上挂 `express-validator`，或任何 `(ctx, next)` 中间件均可。
 
 ### 严格模式
 
@@ -1076,7 +1105,7 @@ id = "your-kv-namespace-id"
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@chaeco/auto-router": "^0.0.13"
+    "@chaeco/auto-router": "^0.0.14"
   }
 }
 ```
@@ -1228,16 +1257,17 @@ npx auto-router-build-manifest <controllersDir> <outputFile> [--prefix /api] [--
 
 完整用法见 [Cloudflare Workers](#cloudflare-workers) 章节。
 
-### `createHandler(handler, meta?)`
+### `createHandler(handler, meta?, middlewares?)`
 
 ```typescript
 createHandler<TCtx = any, TRes = void>(
   handler: RouteHandler<TCtx, TRes>,
-  meta?: RouteMeta
+  meta?: RouteMeta,
+  middlewares?: RouteMiddleware<TCtx>[]
 ): RouteConfig<TCtx, TRes>
 ```
 
-为 handler 函数附加元数据。空对象 `{}` 的 meta 会被归一化为 `undefined`。
+为 handler 函数附加元数据。空对象 `{}` 的 meta 会被归一化为 `undefined`，空数组 `[]` 的 middlewares 会被归一化为 `undefined`。
 
 **`RouteMeta` 字段：**
 
@@ -1246,6 +1276,15 @@ createHandler<TCtx = any, TRes = void>(
 | `requiresAuth` | `boolean` | 是否需要认证 |
 | `description` | `string` | 路由描述 |
 | `[key: string]` | `any` | 任意自定义元数据 |
+
+**`RouteMiddleware`：**
+
+```typescript
+type RouteMiddleware<TCtx = any> =
+  (ctx: TCtx, next: () => Promise<any> | any) => Promise<any> | any
+```
+
+Koa/Hoa 风格路由级中间件，注册在 handler 之前 —— 见[方式 3](#方式-3createhandler--路由级中间件)。
 
 ### `isRouteConfig(obj)`
 

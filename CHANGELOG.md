@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.14] - 2026-07-31
+
+### Added
+
+- **Route-level middlewares** — `createHandler(handler, meta?, middlewares?)` third argument
+  - `RouteMiddleware<TCtx>` type — Koa/Hoa-style `(ctx, next)` middleware
+  - `RouteConfig.middlewares` field; empty `[]` normalized to `undefined`
+  - Registered as `app[method](path, ...middlewares, handler)` — matches Hoa / Koa / Express variadic middleware signature
+  - Supported across all three registration paths:
+    - File-based `autoRouter` (`load-routes.ts`)
+    - `staticAutoRouter` (`static-router.ts`) — createHandler result and plain object
+    - `createWorkerRouter` (`worker-manifest.ts`) — Koa-style chain; a middleware that short-circuits (no `next()` call) stops the chain without calling the handler
+  - Enables direct use of `@hoajs/zod`'s `zodValidator()` as a per-route validation middleware
+  - Exported from the public API: `RouteMiddleware`
+- **`WorkerManifestRoute.middlewares`** — optional route-level middleware chain for Workers manifests
+
+### Tested
+
+- 160 tests passing (4 new handler tests, 3 new static-router tests, 1 new auto-router test, 4 new worker-router tests)
+
 ## [0.0.13] - 2026-07-28
 
 ### Added

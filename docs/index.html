@@ -240,7 +240,7 @@
       <div class="animate-fade-in-up opacity-0">
         <div class="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-8" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
           <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--accent);"></span>
-          <span class="text-sm" style="color: var(--text-secondary);">v0.0.13 · MIT License</span>
+          <span class="text-sm" style="color: var(--text-secondary);">v0.0.14 · MIT License</span>
         </div>
       </div>
 
@@ -652,8 +652,8 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
           <span class="lang-zh">导出方式</span>
         </h2>
         <p class="text-lg max-w-2xl mx-auto" style="color: var(--text-tertiary);">
-          <span class="lang-en">Two ways to export route handlers.</span>
-          <span class="lang-zh">两种导出路由处理器的方式。</span>
+          <span class="lang-en">Three ways to export route handlers.</span>
+          <span class="lang-zh">三种导出路由处理器的方式。</span>
         </p>
       </div>
 
@@ -698,6 +698,35 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
     <span class="string">description</span>: <span class="string">'Get user profile'</span>,
     <span class="string">tags</span>: [<span class="string">'Users'</span>],
   }
+)</pre>
+          </div>
+        </div>
+
+        <!-- Method 3: createHandler + middlewares -->
+        <div class="section-card p-6">
+          <h3 class="text-lg font-semibold mb-4">
+            <span class="lang-en">Method 3: Route-level Middlewares</span>
+            <span class="lang-zh">方式 3：路由级中间件</span>
+          </h3>
+          <p class="text-sm mb-4" style="color: var(--text-tertiary);">
+            <span class="lang-en">Third argument of createHandler — Koa/Hoa-style middlewares that run before the handler. Attach validation middleware like @hoajs/zod.</span>
+            <span class="lang-zh">createHandler 的第三参数 —— Koa/Hoa 风格中间件，在 handler 之前执行。可挂载 @hoajs/zod 等校验中间件。</span>
+          </p>
+          <div class="code-block">
+            <pre class="code-content"><span class="keyword">import</span> { z, <span class="function">zodValidator</span> } <span class="keyword">from</span> <span class="string">'@hoajs/zod'</span>
+<span class="keyword">import</span> { <span class="function">createHandler</span> } <span class="keyword">from</span> <span class="string">'@chaeco/auto-router'</span>
+
+<span class="keyword">const</span> LoginSchema = z.<span class="function">object</span>({
+  username: z.<span class="function">string</span>().<span class="function">min</span>(<span class="number">1</span>),
+  password: z.<span class="function">string</span>().<span class="function">min</span>(<span class="number">1</span>),
+})
+
+<span class="keyword">export default</span> <span class="function">createHandler</span>(
+  <span class="keyword">async</span> (ctx) <span class="operator">=></span> {
+    ctx.res.body = { success: <span class="keyword">true</span> }
+  },
+  { <span class="string">description</span>: <span class="string">'User login'</span> },
+  [<span class="function">zodValidator</span>({ body: LoginSchema })]
 )</pre>
           </div>
         </div>
@@ -841,6 +870,20 @@ app.<span class="function">listen</span>(<span class="string">3000</span>)</pre>
 
 <span class="keyword">export default</span> { fetch: router.fetch }</pre>
           </div>
+        </div>
+      </div>
+
+      <!-- createHandler -->
+      <div class="section-card overflow-hidden mb-8">
+        <div class="p-6" style="border-bottom: 1px solid var(--border-color);">
+          <div class="flex items-center gap-3 flex-wrap">
+            <code class="font-mono text-lg" style="color: var(--accent);">createHandler(handler, meta?, middlewares?)</code>
+            <span class="text-xs px-2 py-1 rounded" style="background: rgba(16, 185, 129, 0.1); color: var(--accent);">Export</span>
+          </div>
+          <p class="mt-2" style="color: var(--text-tertiary);">
+            <span class="lang-en">Wraps a handler with metadata and optional Koa/Hoa-style middlewares that run before the handler.</span>
+            <span class="lang-zh">为 handler 附加元数据和可选的路由级中间件，中间件在 handler 之前执行。</span>
+          </p>
         </div>
       </div>
     </div>

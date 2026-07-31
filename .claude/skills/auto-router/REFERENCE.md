@@ -75,9 +75,10 @@ A hyphen `-` is only converted to `/` when it is adjacent to a dynamic parameter
 ```
 For each route:
   1. Extract routeMeta from createHandler (if used), otherwise undefined
-  2. Check forcePublic patterns  → matchedPublicPattern
-  3. Check forceProtected patterns → matchedProtectedPattern
-  4. Resolve:
+  2. Extract middlewares from createHandler (if used) — registered before the handler
+  3. Check forcePublic patterns  → matchedPublicPattern
+  4. Check forceProtected patterns → matchedProtectedPattern
+  5. Resolve:
      a. routeMeta.requiresAuth defined? → use it (explicit wins)
      b. matchedProtectedPattern? → requiresAuth: true
      c. matchedPublicPattern?  → requiresAuth: false
@@ -213,20 +214,21 @@ export default createHandler(
 
 ```typescript
 // From '@chaeco/auto-router'
-createHandler<TCtx, TRes>(handler, meta?): RouteConfig
+createHandler<TCtx, TRes>(handler, meta?, middlewares?): RouteConfig
 isRouteConfig(obj): obj is RouteConfig
 
 type RouteHandler<TCtx, TRes>  // conditional: single-ctx vs dual-param
+type RouteMiddleware<TCtx>  // (ctx, next) => Promise<any> | any — Koa/Hoa-style
 type RouteMeta { requiresAuth?, description?, [key: string]: any }
-type RouteConfig<TCtx, TRes> { handler, meta? }
+type RouteConfig<TCtx, TRes> { handler, meta?, middlewares? }
 type RouteInfo { method, path, requiresAuth?, meta? }
 type AppRoutesRegistry { publicRoutes, protectedRoutes, all }
 
-type StaticRoute { method, path, handler }
+type StaticRoute { method, path, handler, middlewares? }
 type StaticAutoRouterOptions { routes, ...auth options }
 
 // From '@chaeco/auto-router/worker-manifest'
 createWorkerRouter(options): { fetch }
 type WorkerRouteContext<TEnv, TCtx> { req, env, ctx, params, res }
-type WorkerManifestRoute<TEnv, TCtx> { pattern, method, handler }
+type WorkerManifestRoute<TEnv, TCtx> { pattern, method, handler, middlewares? }
 ```

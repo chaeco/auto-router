@@ -320,3 +320,32 @@ export default createHandler(async (ctx: any) => {
   // userId and id are now strings matching /^\d+$/
 })
 ```
+
+#### 推荐：路由级中间件校验（`@hoajs/zod`）
+
+在 Hoa 上可以通过 `createHandler` 的第三参数直接挂载 `@hoajs/zod` 中间件，
+校验在 handler 之前执行，失败自动返回 400：
+
+```typescript
+import { z, zodValidator } from '@hoajs/zod'
+import { createHandler } from '@chaeco/auto-router'
+
+const LoginSchema = z.object({
+  username: z.string().min(1, 'username is required'),
+  password: z.string().min(1, 'password is required'),
+})
+
+export default createHandler(
+  async (ctx: any) => {
+    // ctx.req.body 已被 zodValidator 校验并解析
+    const { username, password } = ctx.req.body
+    ctx.res.body = { success: true, username }
+  },
+  { description: 'User login with zod middleware validation' },
+  [zodValidator({ body: LoginSchema })]
+)
+```
+
+注册为 `app[method](path, ...middlewares, handler)`，与 Hoa / Koa / Express 的
+中间件签名一致。文件式 `autoRouter`、`staticAutoRouter`、`createWorkerRouter`
+三条路径均支持。

@@ -211,6 +211,7 @@ export async function loadRoutes(app, options) {
                     .then(module => {
                     let handler = module.default;
                     let routeMeta;
+                    let middlewares;
                     // Skip if no default export
                     // 没有默认导出则跳过
                     if (handler === undefined || handler === null) {
@@ -264,9 +265,10 @@ export async function loadRoutes(app, options) {
                     // Check if it's a createHandler wrapped object
                     // 检查是否为 createHandler 包装的对象
                     if (isRouteConfig(handler)) {
-                        // Way 2: createHandler wrapped { handler, meta }
-                        // 方式 2: createHandler 包装 { handler, meta }
+                        // Way 2: createHandler wrapped { handler, meta, middlewares }
+                        // 方式 2: createHandler 包装 { handler, meta, middlewares }
                         routeMeta = handler.meta;
+                        middlewares = handler.middlewares;
                         handler = handler.handler;
                     }
                     else if (typeof handler === 'function') {
@@ -289,6 +291,7 @@ export async function loadRoutes(app, options) {
                             log('warn', `   ⚠️  Detected non-recommended export method (non-strict mode)`);
                             // 检测到非推荐的导出方式（非严格模式）
                             routeMeta = handler.meta;
+                            middlewares = handler.middlewares;
                             handler = handler.handler;
                             // handler is now a valid function; fall through to route registration
                             // handler 现在是有效函数，继续执行路由注册
@@ -384,7 +387,7 @@ export async function loadRoutes(app, options) {
                     else {
                         app.$routes.publicRoutes.push({ method: method.toUpperCase(), path: routePath });
                     }
-                    app[method](routePath, handler);
+                    app[method](routePath, ...(middlewares ?? []), handler);
                 })
                     .catch((err) => {
                     log('error', `❌ Failed to load route: ${filePath}`);

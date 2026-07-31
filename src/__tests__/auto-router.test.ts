@@ -1143,7 +1143,7 @@ describe('autoRouter', () => {
 
     await autoRouter({ dir, prefix: '/api' })(mockApp)
 
-    expect(mockApp.get).toHaveBeenCalledWith('/api/:userId/:postId', expect.any(Function))
+    expect(mockApp.get).toHaveBeenCalledWith('/api/:userid/:postid', expect.any(Function))
     expect(mockApp.$routes!.all).toHaveLength(1)
 
     logSpy.mockRestore()
@@ -1160,7 +1160,7 @@ describe('autoRouter', () => {
 
     await autoRouter({ dir, prefix: '/api' })(mockApp)
 
-    expect(mockApp.get).toHaveBeenCalledWith('/api/:userId/posts', expect.any(Function))
+    expect(mockApp.get).toHaveBeenCalledWith('/api/:userid/posts', expect.any(Function))
     expect(mockApp.$routes!.all).toHaveLength(1)
 
     logSpy.mockRestore()
@@ -1229,7 +1229,7 @@ describe('autoRouter', () => {
 
     await autoRouter({ dir: parentDir, prefix: '/api' })(mockApp)
 
-    expect(mockApp.get).toHaveBeenCalledWith('/api/users/:id/posts/:postId', expect.any(Function))
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users/:id/posts/:postid', expect.any(Function))
     expect(mockApp.$routes!.all).toHaveLength(1)
 
     logSpy.mockRestore()
@@ -1253,8 +1253,8 @@ describe('autoRouter', () => {
 
     await autoRouter({ dir, prefix: '/api' })(mockApp)
 
-    expect(mockApp.put).toHaveBeenCalledWith('/api/:org/members/:userId', expect.any(Function))
-    expect(mockApp.delete).toHaveBeenCalledWith('/api/:org/members/:userId', expect.any(Function))
+    expect(mockApp.put).toHaveBeenCalledWith('/api/:org/members/:userid', expect.any(Function))
+    expect(mockApp.delete).toHaveBeenCalledWith('/api/:org/members/:userid', expect.any(Function))
     expect(mockApp.patch).toHaveBeenCalledWith('/api/:org/settings/:key', expect.any(Function))
     expect(mockApp.$routes!.all).toHaveLength(3)
 

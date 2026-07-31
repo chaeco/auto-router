@@ -1,4 +1,5 @@
 import { isRouteConfig } from './handler.js';
+import { normalizeParamNames } from './parse-route.js';
 function matchRoute(pattern, pathname) {
     const patternSegs = pattern.split('/').filter(Boolean);
     const pathSegs = pathname.split('/').filter(Boolean);
@@ -26,7 +27,11 @@ function matchRoute(pattern, pathname) {
 }
 export function createWorkerRouter(options) {
     const { routes, notFound, onError } = options;
-    // Unwrap createHandler results once at construction time
+    // Unwrap createHandler results once at construction time, and normalize
+    // parameter names to lowercase so `:UserId` and `:userId` are the same
+    // param — keeps ctx.params keys consistent across hand-written patterns.
+    // 构造时解包 createHandler 结果，并将参数名归一化为小写，使 `:UserId` 与
+    // `:userId` 视为同一参数——保证手写 pattern 的 ctx.params 键名一致。
     const resolved = routes.map(route => {
         let handler = route.handler;
         let middlewares = route.middlewares;
@@ -36,7 +41,7 @@ export function createWorkerRouter(options) {
             middlewares = (handler.middlewares ?? []).concat(route.middlewares ?? []);
             handler = handler.handler;
         }
-        return { pattern: route.pattern, method: route.method.toUpperCase(), handler, middlewares };
+        return { pattern: normalizeParamNames(route.pattern), method: route.method.toUpperCase(), handler, middlewares };
     });
     return {
         async fetch(req, env, ctx) {

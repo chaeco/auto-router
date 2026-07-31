@@ -118,15 +118,15 @@ controllers/
   get-users.ts                                      → GET /api/users
   get-[id].ts                                       → GET /api/:id
   post-login.ts                                     → POST /api/login
-  get-[userId]-posts.ts                             → GET /api/:userId/posts
-  get-[userId]-[postId].ts                          → GET /api/:userId/:postId
+  get-[userId]-posts.ts                             → GET /api/:userid/posts
+  get-[userId]-[postId].ts                          → GET /api/:userid/:postid
   users/
     [userId]/
       posts/
-        get.ts                                      → GET /api/users/:userId/posts
-        get-[id].ts                                 → GET /api/users/:userId/posts/:id
+        get.ts                                      → GET /api/users/:userid/posts
+        get-[id].ts                                 → GET /api/users/:userid/posts/:id
       settings/
-        get.ts                                      → GET /api/users/:userId/settings
+        get.ts                                      → GET /api/users/:userid/settings
   admin/
     get-dashboard.ts                                → GET /api/admin/dashboard
 ```
@@ -154,13 +154,13 @@ controllers/
 
 ### 单参数
 
-用方括号 `[]` 包裹参数名，会被转换为 Express 风格的 `:param` 路径段。
+用方括号 `[]` 包裹参数名，会被转换为 Express 风格的 `:param` 路径段。**参数名统一转为小写**——`[userId]` 与 `[UserID]` 都注册为 `:userid`，`ctx.params` 的键名始终是小写。
 
 | 文件名 | 注册为 |
 |--------|--------|
 | `get-[id].ts` | `GET /api/:id` |
 | `delete-[id].ts` | `DELETE /api/:id` |
-| `get-[userId].ts` | `GET /api/:userId` |
+| `get-[userId].ts` | `GET /api/:userid` |
 | `post-[type].ts` | `POST /api/:type` |
 
 ### 多参数
@@ -169,10 +169,10 @@ controllers/
 
 | 文件名 | 注册为 | 模式 |
 |--------|--------|------|
-| `get-[userId]-posts.ts` | `GET /api/:userId/posts` | 参数 + 静态 |
+| `get-[userId]-posts.ts` | `GET /api/:userid/posts` | 参数 + 静态 |
 | `get-users-[id].ts` | `GET /api/users/:id` | 静态 + 参数 |
-| `get-[userId]-[postId].ts` | `GET /api/:userId/:postId` | 参数 + 参数 |
-| `put-[userId]-profile.ts` | `PUT /api/:userId/profile` | 参数 + 静态 |
+| `get-[userId]-[postId].ts` | `GET /api/:userid/:postid` | 参数 + 参数 |
+| `put-[userId]-profile.ts` | `PUT /api/:userid/profile` | 参数 + 静态 |
 | `get-[org]-settings-[key].ts` | `GET /api/:org/settings/:key` | 参数 + 静态 + 参数 |
 | `get-[a]-[b]-[c].ts` | `GET /api/:a/:b/:c` | 三个连续参数 |
 
@@ -182,16 +182,16 @@ controllers/
 
 | 文件路径 | 注册为 |
 |----------|--------|
-| `users/[userId]/get.ts` | `GET /api/users/:userId` |
-| `users/[userId]/posts/get.ts` | `GET /api/users/:userId/posts` |
-| `users/[userId]/posts/[postId]/get.ts` | `GET /api/users/:userId/posts/:postId` |
-| `users/[userId]/posts/get-[id].ts` | `GET /api/users/:userId/posts/:id` |
+| `users/[userId]/get.ts` | `GET /api/users/:userid` |
+| `users/[userId]/posts/get.ts` | `GET /api/users/:userid/posts` |
+| `users/[userId]/posts/[postId]/get.ts` | `GET /api/users/:userid/posts/:postid` |
+| `users/[userId]/posts/get-[id].ts` | `GET /api/users/:userid/posts/:id` |
 
 动态目录和文件级参数可以自然组合——递归扫描时先处理目录参数，再处理文件名参数。
 
 ### 扁平文件 vs 目录嵌套的选择
 
-`GET /api/users/:userId/posts/:postId/comments/:commentId` 可以用两种方式表达：
+`GET /api/users/:userid/posts/:postid/comments/:commentid` 可以用两种方式表达：
 
 | 方式 | 文件路径 | 评价 |
 |------|----------|------|
@@ -221,7 +221,7 @@ controllers/
 | `users` | `users` | `users` | `users` | `users`（无参数，保持原样） |
 | `user-info` | `user-info` | `user-info` | `user-info` | `user-info`（静态文字中的 `-`，不变） |
 | `[id]` | `:id` | `:id` | `:id` | `:id` |
-| `[userId]-posts` | `:userId-posts` | `:userId-posts` | `:userId/posts` | `:userId/posts` |
+| `[userId]-posts` | `:userid-posts` | `:userid-posts` | `:userid/posts` | `:userid/posts` |
 | `users-[id]` | `users-:id` | `users/:id` | `users/:id` | `users/:id` |
 | `[a]-[b]` | `:a-:b` | `:a/:b` | `:a/:b` | `:a/:b` |
 | `[org]-settings-[key]` | `:org-settings-:key` | `:org/settings-:key` | `:org/settings/:key` | `:org/settings/:key` |
@@ -230,7 +230,7 @@ controllers/
 
 ### 参数名校验
 
-参数名（方括号内的内容）仅允许 **ASCII 字母、数字、下划线**（`[A-Za-z0-9_]`）。以下写法会被**拒绝**并跳过该文件（同时打印错误日志），不会静默注册出坏路由：
+参数名（方括号内的内容）仅允许 **ASCII 字母、数字、下划线**（`[A-Za-z0-9_]`），并会被**统一转为小写**。以下写法会被**拒绝**并跳过该文件（同时打印错误日志），不会静默注册出坏路由：
 
 | 非法写法 | 原因 |
 |----------|------|
@@ -686,7 +686,7 @@ export default createHandler(async (ctx: any) => {
 #### 请求体校验
 
 ```typescript
-// POST /api/users/:userId/posts — 创建帖子
+// POST /api/users/:userid/posts — 创建帖子
 export default createHandler(async (ctx: any) => {
   const body = ctx.req?.body ?? {}
 
@@ -806,7 +806,7 @@ auto-router 在扫描时校验每个文件，**跳过**无效文件（记录错�
 | 规则 | 有效示例 | 无效示例 |
 |------|----------|----------|
 | 文件名以 HTTP 方法开头 | `get-users.ts` | `users-get.ts` |
-| 参数使用方括号语法 | `[userId]` | `:userId` |
+| 参数使用方括号语法 | `[userId]` | `:userid` |
 | 不允许空括号 | `[id]` | `[]` |
 | 只允许默认导出 | `export default async ...` | `export const foo = 1` + default |
 | 导出必须是函数或 `createHandler()` 结果 | `async (ctx) => {}` | `export default 42` |
@@ -961,7 +961,7 @@ interface WorkerRouteContext<TEnv = unknown, TCtx = ExecutionContext> {
   req: Request                          // Web Platform Request
   env: TEnv                             // Worker 环境绑定（KV、D1、secrets）
   ctx: TCtx                             // ExecutionContext (waitUntil、passThroughOnException)
-  params: Record<string, string>        // 路由参数（:id、:userId 等）
+  params: Record<string, string>        // 路由参数（:id、:userid 等，参数名统一小写）
   res: {                                // 响应构建器（仅当 handler 返回 undefined 时使用）
     status: number
     headers: Record<string, string>

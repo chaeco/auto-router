@@ -27,12 +27,12 @@ export default async (ctx) => {
 | `get-users.ts` | `GET /api/users` |
 | `post-login.ts` | `POST /api/login` |
 | `get-[id].ts` | `GET /api/:id` |
-| `get-[userId]-posts.ts` | `GET /api/:userId/posts` |
-| `get-[userId]-[postId].ts` | `GET /api/:userId/:postId` |
-| `users/[userId]/posts/get.ts` | `GET /api/users/:userId/posts` |
-| `users/[userId]/posts/get-[id].ts` | `GET /api/users/:userId/posts/:id` |
+| `get-[userId]-posts.ts` | `GET /api/:userid/posts` |
+| `get-[userId]-[postId].ts` | `GET /api/:userid/:postid` |
+| `users/[userId]/posts/get.ts` | `GET /api/users/:userid/posts` |
+| `users/[userId]/posts/get-[id].ts` | `GET /api/users/:userid/posts/:id` |
 
-**Rule of thumb:** ≤3 path segments → flat file. >3 segments → nested directories. See [REFERENCE.md](REFERENCE.md) for the full conversion algorithm.
+**Rule of thumb:** ≤3 path segments → flat file. >3 segments → nested directories. **Param names are lowercased** (`[userId]` → `:userid`, `ctx.params.userid`). See [REFERENCE.md](REFERENCE.md) for the full conversion algorithm.
 
 ### Exports — three forms
 

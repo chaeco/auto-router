@@ -18,7 +18,7 @@ Then `basePath + '/' + routeName` is assembled and `//` collapsed to `/`.
 |-----------|-----------|--------|--------|--------|-------|
 | `get-users.ts` | `users` | `users` | `users` | `users` | `/api/users` |
 | `get-[id].ts` | `[id]` | `:id` | `:id` | `:id` | `/api/:id` |
-| `get-[userId]-posts.ts` | `[userId]-posts` | `:userId-posts` | `:userId-posts` | `:userId/posts` | `/api/:userId/posts` |
+| `get-[userId]-posts.ts` | `[userId]-posts` | `:userid-posts` | `:userid-posts` | `:userid/posts` | `/api/:userid/posts` |
 | `get-users-[id].ts` | `users-[id]` | `users-:id` | `users/:id` | `users/:id` | `/api/users/:id` |
 | `get-[a]-[b].ts` | `[a]-[b]` | `:a-:b` | `:a/:b` | `:a/:b` | `/api/:a/:b` |
 | `get-[a]-[b]-[c].ts` | `[a]-[b]-[c]` | `:a-:b-:c` | `:a/:b-:c` | `:a/:b/:c` | `/api/:a/:b/:c` |
@@ -36,11 +36,13 @@ fullPath  = basePath ? basePath + '/' + routeName : '/' + routeName
 | `get-users.ts` | `""` | `users` | `/users` |
 | `users/get.ts` | `/users` | `""` (method-only) | `/users` |
 | `users/posts/get-[id].ts` | `/users/posts` | `:id` | `/users/posts/:id` |
-| `users/[userId]/get.ts` | `/users/:userId` | `""` | `/users/:userId` |
+| `users/[userId]/get.ts` | `/users/:userid` | `""` | `/users/:userid` |
 
 ### `-` is adjacent to `[param]` becomes `/`
 
 A hyphen `-` is only converted to `/` when it is adjacent to a dynamic parameter. Hyphens within purely static text (e.g. `user-info`, `my-api-v2`) are preserved as-is. There is no escape mechanism needed.
+
+**Parameter names are normalized to lowercase** — `[userId]`, `[UserId]`, and `[USERID]` all register as `:userid`, and `ctx.params` keys are always lowercase. Hand-written `:param` patterns in `staticAutoRouter` / `createWorkerRouter` are lowercased the same way.
 
 ## Validation rules
 

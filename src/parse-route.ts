@@ -7,19 +7,30 @@
  * callers can skip the offending file instead of silently registering a
  * broken route. `parseRouteName` / `parseDirSegment` run the conversion and
  * throw on invalid input.
+ *
+ * Parameter names are normalized to lowercase — `[UserId]` becomes `:userid` —
+ * so route patterns, `ctx.params` keys and duplicate-detection keys stay
+ * consistent regardless of how the file was named. Hand-written patterns in
+ * `staticAutoRouter` / `createWorkerRouter` are normalized the same way.
+ * 参数名会被归一化为小写——`[UserId]` 变成 `:userid`——保证路由 pattern、
+ * `ctx.params` 键名与去重键不受文件名大小写影响。`staticAutoRouter` /
+ * `createWorkerRouter` 中手写的 pattern 同样会被归一化。
  */
 
-// Route-name grammar: static segments and [param] segments alternate, joined
-// by `-`. Static text may contain hyphens but never brackets. Params must be
-// a single non-empty `[param]` token.
-// 路由名文法：静态段与 [param] 段用 `-` 交替连接。静态段可含连字符但不可含方括号；
-// 参数必须是非空的单个 `[param]` 记号。
-const ROUTE_NAME_PATTERN = /^([^\[\]]+|\[[^\[\]]+\])(-([^\[\]]+|\[[^\[\]]+\]))*$/
+// Route-name grammar: the route name is a `-`-joined sequence of static
+// text segments and `[param]` tokens, alternating. Static text may contain
+// hyphens (as literal `-` joins and inside static names like `user-info`)
+// but never brackets; params are single non-empty `[param]` tokens.
+// 路由名文法：路由名是静态文本段与 `[param]` 记号用 `-` 连接而成的序列，
+// 二者交替出现。静态文本可含连字符（作为字面 `-` 连接或静态名如 `user-info`），
+// 但不可含方括号；参数必须是单个非空的 `[param]` 记号。
+const SEGMENT = '([^\\[\\]]+|\\[[^\\[\\]]+\\])'
+const ROUTE_NAME_PATTERN = new RegExp(`^${SEGMENT}(-${SEGMENT})*$`)
 
 // A directory segment is either pure static text or a single whole-segment
 // `[param]` — a param must span the entire segment, never glue to static text.
 // 目录段要么是纯静态文本，要么是独占整个段的单个 `[param]`，不允许与静态文本粘连。
-const DIR_PARAM_PATTERN = /^\[[^\[\]]+\]$/
+const DIR_PARAM_PATTERN = /^\[[^\[\]\s]+\]$/
 
 // ASCII-only content for parameter names — `\w` in JS would otherwise let
 // `[用户名]` slip through, so params must stay ASCII-safe in file names.
@@ -29,6 +40,19 @@ const ASCII_PARAM = /^[A-Za-z0-9_]+$/
 /** Extract every `[param]` token's content, or empty if the name has none. */
 function paramTokens(name: string): string[] {
   return (name.match(/\[([^\[\]]+)\]/g) ?? []).map((token) => token.slice(1, -1))
+}
+
+/**
+ * Normalize parameter names in a pattern to lowercase, in place. Accepts
+ * file-name `[param]` form, directory `[param]` segments, and Express-style
+ * `:param` segments — the two sources a pattern can come from.
+ * 将 pattern 中的参数名归一化为小写（原地修改）。同时接受文件名 `[param]` 形式、
+ * 目录 `[param]` 段和 Express 风格的 `:param` 段——pattern 的两种来源。
+ */
+export function normalizeParamNames(pattern: string): string {
+  return pattern
+    .replace(/\[([^\]]+)\]/g, (_, name) => `[${name.toLowerCase()}]`)
+    .replace(/:([^/]+)/g, (_, name) => `:${name.toLowerCase()}`)
 }
 
 /**
@@ -66,10 +90,6 @@ export function validateRouteName(rawName: string): void {
  * 校验目录段（单个路径段，至多一个 `[param]`），非法括号语法或空括号时抛错。
  */
 export function validateDirSegment(segment: string): void {
-  if (segment.includes('[]')) {
-    throw new Error('Empty parameters not allowed [], use [id] instead of []')
-  }
-
   if (!segment.includes('[') && !segment.includes(']')) {
     return // Pure static name — nothing to validate
   }
@@ -98,9 +118,9 @@ export function validateDirSegment(segment: string): void {
 export function parseRouteName(rawName: string): string {
   validateRouteName(rawName)
   return rawName
-    .replace(/\[([A-Za-z0-9_]+)\]/g, ':$1')  // [param] → :param
-    .replace(/-:/g, '/:')                     // -: → /: (dash before colon → slash)
-    .replace(/:([A-Za-z0-9_]+)-/g, ':$1/')    // :param- → :param/ (colon segment before dash → slash after)
+    .replace(/\[([A-Za-z0-9_]+)\]/g, (_m, name) => `:${name.toLowerCase()}`)  // [param] → :param
+    .replace(/-:/g, '/:')                                                      // -: → /: (dash before colon → slash)
+    .replace(/:([A-Za-z0-9_]+)-/g, (_m, name) => `:${name.toLowerCase()}/`)   // :param- → :param/ (colon segment before dash → slash after)
 }
 
 /**
@@ -110,5 +130,5 @@ export function parseRouteName(rawName: string): string {
  */
 export function parseDirSegment(segment: string): string {
   validateDirSegment(segment)
-  return segment.replace(/\[([A-Za-z0-9_]+)\]/g, ':$1')
+  return segment.replace(/\[([A-Za-z0-9_]+)\]/g, (_m, name) => `:${name.toLowerCase()}`)
 }

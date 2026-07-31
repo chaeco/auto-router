@@ -41,7 +41,7 @@ describe('createWorkerRouter', () => {
     expect(await res.text()).toBe('{"id":"123"}')
   })
 
-  it('extracts multiple params from route', async () => {
+  it('extracts multiple params from route (names lowercased)', async () => {
     let capturedParams: Record<string, string> = {}
     const handler = async (ctx: WorkerRouteContext) => {
       capturedParams = ctx.params
@@ -53,10 +53,10 @@ describe('createWorkerRouter', () => {
     const req = new Request('http://localhost/api/users/42/posts/99', { method: 'GET' })
     const res = await router.fetch(req, {}, {} as ExecutionContext)
 
-    expect(capturedParams).toEqual({ userId: '42', postId: '99' })
+    expect(capturedParams).toEqual({ userid: '42', postid: '99' })
     expect(res.headers.get('content-type')).toBe('application/json')
     const body = await res.json()
-    expect(body).toEqual({ userId: '42', postId: '99' })
+    expect(body).toEqual({ userid: '42', postid: '99' })
   })
 
   it('falls through on method mismatch', async () => {

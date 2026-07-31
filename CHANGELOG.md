@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Parameter name normalization (breaking)** — `[param]` names are now lowercased: `[userId]`, `[UserId]`, `[USERID]` all register as `:userid`, and `ctx.params` keys are always lowercase
+  - File-name params via `parseRouteName` / `parseDirSegment`, and hand-written `:param` patterns in `staticAutoRouter` / `createWorkerRouter` via `normalizeParamNames`
+  - Case-variant patterns are now treated as duplicates (e.g. `get-[userid].ts` + `get-[USERID].ts`)
 - **Parameter name validation** — `[param]` names are now validated instead of silently producing broken routes
   - Added `validateRouteName` / `validateDirSegment` to `parse-route.ts`; `parseRouteName` / `parseDirSegment` now throw on invalid syntax
   - Rejected: empty `[]`, adjacent params without a `-` separator (`[a][b]`), unpaired brackets, non-ASCII or hyphenated param names (`[user-id]`, `[用户名]`)
@@ -18,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tested
 
-- 175 tests passing (15 new: validation cases in `parse-route`, rejection paths in `auto-router`, `build-worker-manifest`, and `static-router`)
+- 176 tests passing (16 new: validation cases in `parse-route`, rejection paths in `auto-router`, `build-worker-manifest`, `static-router`, and lowercase dedup in `worker-integration`)
 
 ## [0.0.14] - 2026-07-31
 

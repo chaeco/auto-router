@@ -1,31 +1,32 @@
 import { parseRouteName, parseDirSegment, validateRouteName, validateDirSegment } from '../parse-route.js'
 
 describe('parseRouteName', () => {
-  it('converts [param] to :param', () => {
+  it('converts [param] to :param (lowercased)', () => {
     expect(parseRouteName('[id]')).toBe(':id')
-    expect(parseRouteName('[userId]')).toBe(':userId')
+    expect(parseRouteName('[userId]')).toBe(':userid')
+    expect(parseRouteName('[UserID]')).toBe(':userid')
   })
 
-  it('converts [param1]-[param2] to :param1/:param2', () => {
+  it('converts [param1]-[param2] to :param1/:param2 (lowercased)', () => {
     expect(parseRouteName('[a]-[b]')).toBe(':a/:b')
-    expect(parseRouteName('[userId]-[postId]')).toBe(':userId/:postId')
+    expect(parseRouteName('[userId]-[postId]')).toBe(':userid/:postid')
   })
 
-  it('converts [param]-static to :param/static', () => {
-    expect(parseRouteName('[userId]-posts')).toBe(':userId/posts')
+  it('converts [param]-static to :param/static (lowercased)', () => {
+    expect(parseRouteName('[userId]-posts')).toBe(':userid/posts')
     expect(parseRouteName('[org]-settings')).toBe(':org/settings')
   })
 
-  it('converts static-[param] to static/:param', () => {
+  it('converts static-[param] to static/:param (lowercased)', () => {
     expect(parseRouteName('users-[id]')).toBe('users/:id')
-    expect(parseRouteName('posts-[postId]')).toBe('posts/:postId')
+    expect(parseRouteName('posts-[postId]')).toBe('posts/:postid')
   })
 
   it('converts [a]-[b]-[c] to :a/:b/:c', () => {
     expect(parseRouteName('[a]-[b]-[c]')).toBe(':a/:b/:c')
   })
 
-  it('converts [org]-settings-[key] to :org/settings/:key', () => {
+  it('converts [org]-settings-[key] to :org/settings/:key (lowercased)', () => {
     expect(parseRouteName('[org]-settings-[key]')).toBe(':org/settings/:key')
   })
 
@@ -47,14 +48,14 @@ describe('parseRouteName', () => {
     // Regression guard: if step 3 ran before step 2, [a]-[b] would become :a-:b → :a/:b (wrong intermediate)
     // Correct order: [a]-[b] → :a-:b → :a/:b (step 2) → :a/:b (step 3 no-op)
     const result = parseRouteName('[userId]-[postId]')
-    expect(result).toBe(':userId/:postId')
+    expect(result).toBe(':userid/:postid')
   })
 })
 
 describe('parseDirSegment', () => {
-  it('converts [param] to :param', () => {
-    expect(parseDirSegment('[userId]')).toBe(':userId')
-    expect(parseDirSegment('[postId]')).toBe(':postId')
+  it('converts [param] to :param (lowercased)', () => {
+    expect(parseDirSegment('[userId]')).toBe(':userid')
+    expect(parseDirSegment('[PostId]')).toBe(':postid')
   })
 
   it('preserves plain names', () => {
@@ -110,7 +111,7 @@ describe('validateDirSegment', () => {
   })
 
   it('rejects empty brackets', () => {
-    expect(() => validateDirSegment('[]')).toThrow(/Empty parameters/)
+    expect(() => validateDirSegment('[]')).toThrow(/single \[id\] segment/)
   })
 
   it('rejects params glued to static text or multiple params', () => {

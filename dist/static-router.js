@@ -1,6 +1,6 @@
 import { isRouteConfig } from './handler.js';
 import { matchesFilter } from './matches-filter.js';
-import { validateRouteName } from './parse-route.js';
+import { validateRouteName, normalizeParamNames } from './parse-route.js';
 function resolveAuth(options) {
     const { routePath, method, routeMeta, defaultRequiresAuth, forcePublic, forceProtected } = options;
     const matchedPublicPattern = forcePublic?.find((pattern) => matchesFilter(routePath, method, pattern));
@@ -52,24 +52,29 @@ export function staticAutoRouter(options) {
         // Buffer route log lines for sorted output
         // 缓存路由日志行，用于排序输出
         const routeLogLines = [];
-        for (const { method, path: routePath, handler: rawHandler } of routes) {
+        for (const { method, path, handler: rawHandler } of routes) {
             const normalizedMethod = method.toLowerCase();
             // Reject routes whose path uses the file-name [param] syntax — the `-` → `/`
             // conversion is a file-naming concern, static routes must be written in
             // Express-style `:param` form directly.
             // 拒绝路径中使用文件名 [param] 语法的路由——连字符转斜杠是文件命名的规则，
             // 静态路由必须直接写成 Express 风格的 :param 形式。
-            if (routePath.includes('[') || routePath.includes(']')) {
+            if (path.includes('[') || path.includes(']')) {
                 try {
-                    validateRouteName(routePath);
+                    validateRouteName(path);
                 }
                 catch (err) {
-                    log('error', `❌ Skip route ${routePath}: ${err instanceof Error ? err.message : String(err)}`);
+                    log('error', `❌ Skip route ${path}: ${err instanceof Error ? err.message : String(err)}`);
                     continue;
                 }
-                log('error', `❌ Skip route ${routePath}: use Express-style :param (e.g. '/users/:id') — file-name [param] syntax is not valid in static routes`);
+                log('error', `❌ Skip route ${path}: use Express-style :param (e.g. '/users/:id') — file-name [param] syntax is not valid in static routes`);
                 continue;
             }
+            // Normalize parameter names to lowercase so `:UserId` and `:userId` are
+            // the same param — keeps ctx.params keys and duplicate keys consistent.
+            // 将参数名归一化为小写，使 `:UserId` 与 `:userId` 视为同一参数——保证
+            // ctx.params 键名与去重键一致。
+            const routePath = normalizeParamNames(path);
             const routeKey = `${normalizedMethod.toUpperCase()} ${routePath}`;
             if (registeredRoutes.has(routeKey)) {
                 log('error', `❌ Duplicate route: ${routeKey} — skipped`);

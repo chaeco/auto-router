@@ -97,8 +97,8 @@ describe('isRouteConfig', () => {
     expect(isRouteConfig(123)).toBe(false)
   })
 
-  it('should return false for objects without $__isRouteConfig', () => {
-    const obj = { handler: async () => { }, meta: {}, $__isRouteConfig: false }
+  it('should return false for objects without __routeConfigBrand', () => {
+    const obj = { handler: async () => { }, meta: {}, __routeConfigBrand: false }
 
     expect(isRouteConfig(obj)).toBe(false)
   })

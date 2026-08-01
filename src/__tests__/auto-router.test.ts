@@ -538,14 +538,14 @@ describe('autoRouter', () => {
   it('should register route-level middlewares from createHandler before the handler', async () => {
     const mwDir = join(process.cwd(), '__tests__', 'controllers-middleware')
     mkdirSync(mwDir, { recursive: true })
-    // Simulate createHandler output with middlewares: $__isRouteConfig marks it as a RouteConfig
+    // Simulate createHandler output with middlewares: __routeConfigBrand marks it as a RouteConfig
     writeFileSync(
       join(mwDir, 'post-login.js'),
       `export default {
   handler: async (ctx) => { ctx.res.body = { ok: true } },
   meta: { description: 'login' },
   middlewares: [async (ctx, next) => { ctx.req._seen = true; await next() }],
-  $__isRouteConfig: true
+  __routeConfigBrand: true
 }`
     )
 
@@ -640,6 +640,40 @@ describe('autoRouter', () => {
     await autoRouter({ dir, prefix: '/api' })(mockApp)
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('only ASCII'))
+    expect(mockApp.get).not.toHaveBeenCalled()
+
+    consoleSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should reject file with trailing dash in route name', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-trailing-dash')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users-.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('must not start or end with "-"'))
+    expect(mockApp.get).not.toHaveBeenCalled()
+
+    consoleSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should reject file with wrong-cased HTTP method prefix and explain it', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-wrong-case-method')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'GET-users.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api' })(mockApp)
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('must be lowercase'))
     expect(mockApp.get).not.toHaveBeenCalled()
 
     consoleSpy.mockRestore()
@@ -838,10 +872,10 @@ describe('autoRouter', () => {
   it('should warn when createHandler explicit meta overrides forceProtected pattern', async () => {
     const metaDir = join(process.cwd(), '__tests__', 'controllers-meta-override-prot')
     mkdirSync(metaDir, { recursive: true })
-    // Simulate createHandler output: $__isRouteConfig marks it as a RouteConfig
+    // Simulate createHandler output: __routeConfigBrand marks it as a RouteConfig
     writeFileSync(
       join(metaDir, 'get-open.js'),
-      'export default { handler: async (ctx) => {}, meta: { requiresAuth: false }, $__isRouteConfig: true }'
+      'export default { handler: async (ctx) => {}, meta: { requiresAuth: false }, __routeConfigBrand: true }'
     )
 
     const mockApp: any = { get: jest.fn(), $routes: undefined }
@@ -869,7 +903,7 @@ describe('autoRouter', () => {
     mkdirSync(metaPubDir, { recursive: true })
     writeFileSync(
       join(metaPubDir, 'get-secure.js'),
-      'export default { handler: async (ctx) => {}, meta: { requiresAuth: true }, $__isRouteConfig: true }'
+      'export default { handler: async (ctx) => {}, meta: { requiresAuth: true }, __routeConfigBrand: true }'
     )
 
     const mockApp: any = { get: jest.fn(), $routes: undefined }

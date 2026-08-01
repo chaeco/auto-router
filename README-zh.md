@@ -240,6 +240,8 @@ controllers/
 | `get-[user-id].ts` | 参数名含连字符，应为 `get-user-[id].ts` 或 `get-[userId].ts` |
 | `get-[v1.2].ts` | 参数名含点号 |
 | `get-[用户名].ts` | 参数名含非 ASCII 字符 |
+| `get-users-.ts` / `get--users.ts` | 路由名以 `-` 开头或结尾（边界处为空段） |
+| `GET-users.ts` | HTTP 方法前缀必须小写（会给出明确提示） |
 
 目录名同样遵循该校验，且参数必须**独占整个目录段**——`[userId]/` 合法，`users[id]/`、`[a][b]/` 不合法。
 
@@ -1122,7 +1124,7 @@ id = "your-kv-namespace-id"
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@chaeco/auto-router": "^0.0.14"
+    "@chaeco/auto-router": "^0.1.0"
   }
 }
 ```

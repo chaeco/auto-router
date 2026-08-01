@@ -50,8 +50,9 @@ A hyphen `-` is only converted to `/` when it is adjacent to a dynamic parameter
 
 | Check | Valid | Invalid |
 |-------|-------|---------|
-| Starts with `{method}-` or exactly `{method}` | `get-users.ts`, `get.ts` | `users-get.ts` |
+| Starts with `{method}-` or exactly `{method}` — prefix must be **lowercase** | `get-users.ts`, `get.ts` | `users-get.ts`, `GET-users.ts` (rejected with a lowercase hint) |
 | Param syntax — brackets paired, params `-`-separated, ASCII name (`[A-Za-z0-9_]`) | `[id]`, `[a]-[b]`, `[userId]-posts` | `[]`, `[a][b]`, `[id`, `id]`, `[user-id]`, `[用户名]` |
+| Route name must not start or end with `-` (empty boundary segment) | `get-users.ts`, `get-[id].ts` | `get-users-.ts`, `get--users.ts` |
 | Only `.ts`, `.js` files (excluding `.d.ts`) | `get-users.ts` | `types.d.ts` |
 
 ### Export validation (strict mode)

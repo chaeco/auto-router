@@ -7,24 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-01
+
+### Added
+
+- **`AppLike` interface** — replaces `app: any` throughout the codebase with a minimal typed interface (`AppRoutesRegistry` + index signature)
+- **`ForcePatternTracker` class** — shared `forcePublic`/`forceProtected` pattern tracking, conflict detection, and warning output in `auth-resolver.ts`
+- **`resolveAuth` shared function** — extracted from `static-router.ts` into `auth-resolver.ts`; now used by both `load-routes.ts` and `static-router.ts`
+- **`HTTP_METHODS` constant** — shared in `constants.ts`; `matches-filter.ts` derives `HTTP_METHODS_UPPER` from it
+- **`validateFileName` shared function** — extracted from `load-routes.ts` and `build-worker-manifest.ts` into `validation.ts`; includes wrong-case detection
+- **`isHttpMethodKeyword`** — directory-name keyword check extracted to `validation.ts`
+
 ### Changed
 
-- **Parameter name validation** — `[param]` names are now validated instead of silently producing broken routes
-  - Added `validateRouteName` / `validateDirSegment` to `parse-route.ts`; `parseRouteName` / `parseDirSegment` now throw on invalid syntax
-  - Rejected: empty `[]`, adjacent params without a `-` separator (`[a][b]`), unpaired brackets, non-ASCII or hyphenated param names (`[user-id]`, `[用户名]`)
-  - Directory params must span the whole segment (`[userId]/` valid; `users[id]/`, `[a][b]/` rejected)
-  - Enforced across all three registration paths: `autoRouter` (file scan), `generateManifest` (Workers CLI), and `staticAutoRouter` (bracket syntax in `path` rejected — use `:param` form)
-  - Malformed files/dirs are skipped with an error log instead of registering a broken route
-- **Case-insensitive duplicate detection** — param-name casing is folded when building the duplicate-detection key, so `get-[userId].ts` and `get-[UserID].ts` are treated as the same route (they match the same URLs). The **registered** pattern keeps the original casing — `[userId]` registers as `:userId` and `ctx.params.userId` reads the way it was written, matching Express/Koa/Hoa conventions. Applied via `normalizeParamNames` across `autoRouter`, `staticAutoRouter`, and `generateManifest`
-- **Sharper directory-param error messages** — `validateDirSegment` now distinguishes structural errors (glued static text, multiple params, spaces, empty brackets → "single [id] segment") from ASCII violations (`[user-id]`, `[用户名]` → "only ASCII letters")
+- **Refactored shared code** — 3 new modules extract duplicated logic from `load-routes.ts`, `static-router.ts`, and `build-worker-manifest.ts`:
+  - `src/constants.ts` — `HTTP_METHODS` constant
+  - `src/validation.ts` — `validateFileName`, `isHttpMethodKeyword`
+  - `src/auth-resolver.ts` — `resolveAuth`, `ForcePatternTracker`, `LogFn`
+- **Renamed APIs** — improved naming consistency:
+  - `validateDirSegment` → `validateDirectorySegment`
+  - `parseDirSegment` → `parseDirectorySegment`
+  - `scanDir` → `scanDirectory` (in `load-routes.ts`, `build-worker-manifest.ts`)
+  - `$__isRouteConfig` → `__routeConfigBrand` (internal sentinel)
+  - `patternSegs`/`pathSegs` → `patternSegments`/`pathSegments`
+  - `ps`/`vs` → `patternSegment`/`valueSegment`
+  - `wrongCase` → `wrongCasedMethod`
+  - `inner` → `paramContent`
+- **`LogFn` type** — now shared from `auth-resolver.ts`; `static-router.ts` log function unified to `switch` style
+- **`HTTP_METHODS_UPPER`** — now derived from `constants.ts` `HTTP_METHODS` instead of separate declaration
+- **Cleaned up comments** — removed redundant "code restatement" comments and Chinese-duplicate comments across all source files
 
-### Tested
+### Exported
 
-- 195 tests passing (15 new this change, all edge-case coverage; 35 new since v0.0.14 including the validation and dedup work)
-  - `parse-route`: trailing/leading dashes, glued static text, empty inner brackets, spaces in names, underscore/case variants
-  - `auto-router` / `worker-integration`: `[userId]` vs `[user_id]` register as two routes; case-variant files dedup on case-sensitive filesystems (probe-gated — macOS/Windows fold the filenames into one file)
-  - `worker-router`: static-segment case-sensitivity and hand-written `:param` casing preserved in `ctx.params`
-  - `static-router`: `:param` case preserved in registration; case-variant paths dedup
+- `AppLike` type — now exported from the public API (`@chaeco/auto-router`)
 
 ## [0.0.14] - 2026-07-31
 
@@ -193,3 +208,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `strict` mode option — enforces function-only exports
 - `logging` option — controls console output
 - `defaultRequiresAuth` global permission default
+
+[0.1.0]: https://github.com/chaeco/auto-router/compare/v0.0.14...v0.1.0
+[0.0.14]: https://github.com/chaeco/auto-router/compare/v0.0.13...v0.0.14
+[0.0.13]: https://github.com/chaeco/auto-router/compare/v0.0.12...v0.0.13
+[0.0.12]: https://github.com/chaeco/auto-router/compare/v0.0.11...v0.0.12
+[0.0.11]: https://github.com/chaeco/auto-router/compare/v0.0.10...v0.0.11
+[0.0.10]: https://github.com/chaeco/auto-router/compare/v0.0.9...v0.0.10
+[0.0.9]: https://github.com/chaeco/auto-router/compare/v0.0.8...v0.0.9
+[0.0.8]: https://github.com/chaeco/auto-router/compare/v0.0.6...v0.0.8
+[0.0.6]: https://github.com/chaeco/auto-router/compare/v0.0.1...v0.0.6
+[0.0.1]: https://github.com/chaeco/auto-router/releases/tag/v0.0.1

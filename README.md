@@ -239,6 +239,8 @@ Parameter names (the content inside brackets) must be **ASCII letters, digits, o
 | `get-[user-id].ts` | Hyphen inside a param name (use `get-user-[id].ts` or `get-[userId].ts`) |
 | `get-[v1.2].ts` | Dot inside a param name |
 | `get-[用户名].ts` | Non-ASCII param name |
+| `get-users-.ts` / `get--users.ts` | Route name starts or ends with `-` (empty boundary segment) |
+| `GET-users.ts` | HTTP method prefix must be lowercase (rejected with a hint) |
 
 Directory names follow the same rules, and a param must **span the whole segment** — `[userId]/` is valid, while `users[id]/` and `[a][b]/` are not.
 
@@ -1024,7 +1026,7 @@ id = "your-kv-namespace-id"
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@chaeco/auto-router": "^0.0.14"
+    "@chaeco/auto-router": "^0.1.0"
   }
 }
 ```

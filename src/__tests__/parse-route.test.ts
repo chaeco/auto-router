@@ -1,4 +1,4 @@
-import { parseRouteName, parseDirSegment, validateRouteName, validateDirSegment, normalizeParamNames } from '../parse-route.js'
+import { parseRouteName, parseDirectorySegment, validateRouteName, validateDirectorySegment, normalizeParamNames } from '../parse-route.js'
 
 describe('parseRouteName', () => {
   it('converts [param] to :param (case preserved)', () => {
@@ -67,19 +67,19 @@ describe('parseRouteName', () => {
   })
 })
 
-describe('parseDirSegment', () => {
+describe('parseDirectorySegment', () => {
   it('converts [param] to :param (case preserved)', () => {
-    expect(parseDirSegment('[userId]')).toBe(':userId')
-    expect(parseDirSegment('[PostId]')).toBe(':PostId')
+    expect(parseDirectorySegment('[userId]')).toBe(':userId')
+    expect(parseDirectorySegment('[PostId]')).toBe(':PostId')
   })
 
   it('preserves plain names', () => {
-    expect(parseDirSegment('users')).toBe('users')
-    expect(parseDirSegment('admin')).toBe('admin')
+    expect(parseDirectorySegment('users')).toBe('users')
+    expect(parseDirectorySegment('admin')).toBe('admin')
   })
 
   it('does not convert hyphens to slashes (directory segments are single units)', () => {
-    expect(parseDirSegment('user-posts')).toBe('user-posts')
+    expect(parseDirectorySegment('user-posts')).toBe('user-posts')
   })
 })
 
@@ -123,16 +123,16 @@ describe('validateRouteName', () => {
     expect(() => validateRouteName('a-[b]x')).toThrow(/Invalid parameter syntax/)
   })
 
-  it('rejects a trailing or leading dash that unbalances the segment list', () => {
-    expect(() => validateRouteName('[a]-')).toThrow(/Invalid parameter syntax/)
-    expect(() => validateRouteName('[a]-[b]-[c]-')).toThrow(/Invalid parameter syntax/)
+  it('rejects a leading or trailing dash (empty boundary segment)', () => {
+    expect(() => validateRouteName('[a]-')).toThrow(/must not start or end with "-"/)
+    expect(() => validateRouteName('[a]-[b]-[c]-')).toThrow(/must not start or end with "-"/)
+    expect(() => validateRouteName('-a')).toThrow(/must not start or end with "-"/)
+    expect(() => validateRouteName('a-')).toThrow(/must not start or end with "-"/)
   })
 
-  it('accepts pure-static hyphens and leading/trailing dashes (static text)', () => {
+  it('accepts interior hyphens in static text', () => {
     expect(() => validateRouteName('user-info')).not.toThrow()
     expect(() => validateRouteName('a--b')).not.toThrow()
-    expect(() => validateRouteName('a-')).not.toThrow()
-    expect(() => validateRouteName('-a')).not.toThrow()
   })
 
   it('accepts case and underscore variants as valid names', () => {
@@ -142,37 +142,37 @@ describe('validateRouteName', () => {
   })
 })
 
-describe('validateDirSegment', () => {
+describe('validateDirectorySegment', () => {
   it('accepts a whole-segment [param] and plain names', () => {
-    expect(() => validateDirSegment('[userId]')).not.toThrow()
-    expect(() => validateDirSegment('[user_id]')).not.toThrow()
-    expect(() => validateDirSegment('[ABC]')).not.toThrow()
-    expect(() => validateDirSegment('users')).not.toThrow()
-    expect(() => validateDirSegment('user-posts')).not.toThrow()
+    expect(() => validateDirectorySegment('[userId]')).not.toThrow()
+    expect(() => validateDirectorySegment('[user_id]')).not.toThrow()
+    expect(() => validateDirectorySegment('[ABC]')).not.toThrow()
+    expect(() => validateDirectorySegment('users')).not.toThrow()
+    expect(() => validateDirectorySegment('user-posts')).not.toThrow()
   })
 
   it('rejects empty brackets', () => {
-    expect(() => validateDirSegment('[]')).toThrow(/without spaces|single \[id\] segment/)
+    expect(() => validateDirectorySegment('[]')).toThrow(/without spaces|single \[id\] segment/)
   })
 
   it('rejects params glued to static text or multiple params', () => {
-    expect(() => validateDirSegment('users[id]')).toThrow(/single \[id\] segment/)
-    expect(() => validateDirSegment('[a][b]')).toThrow(/single \[id\] segment/)
+    expect(() => validateDirectorySegment('users[id]')).toThrow(/single \[id\] segment/)
+    expect(() => validateDirectorySegment('[a][b]')).toThrow(/single \[id\] segment/)
   })
 
   it('rejects names with spaces or empty inner brackets', () => {
-    expect(() => validateDirSegment('[ a]')).toThrow(/without spaces/)
-    expect(() => validateDirSegment('[a ]')).toThrow(/without spaces/)
-    expect(() => validateDirSegment('[]')).toThrow(/without spaces/)
+    expect(() => validateDirectorySegment('[ a]')).toThrow(/without spaces/)
+    expect(() => validateDirectorySegment('[a ]')).toThrow(/without spaces/)
+    expect(() => validateDirectorySegment('[]')).toThrow(/without spaces/)
   })
 
   it('rejects non-ASCII or hyphenated parameter names', () => {
-    expect(() => validateDirSegment('[用户名]')).toThrow(/only ASCII/)
-    expect(() => validateDirSegment('[user-id]')).toThrow(/only ASCII/)
+    expect(() => validateDirectorySegment('[用户名]')).toThrow(/only ASCII/)
+    expect(() => validateDirectorySegment('[user-id]')).toThrow(/only ASCII/)
   })
 
   it('rejects a param glued to static text', () => {
-    expect(() => validateDirSegment('[a]x')).toThrow(/single \[id\] segment/)
+    expect(() => validateDirectorySegment('[a]x')).toThrow(/single \[id\] segment/)
   })
 })
 

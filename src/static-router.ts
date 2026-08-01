@@ -1,5 +1,5 @@
-import { isRouteConfig, type RouteInfo, type RouteMiddleware } from './handler.js'
-import { matchesFilter } from './matches-filter.js'
+import { isRouteConfig, type AppLike, type RouteInfo, type RouteMiddleware } from './handler.js'
+import { resolveAuth, ForcePatternTracker, type LogFn } from './auth-resolver.js'
 import { validateRouteName, normalizeParamNames } from './parse-route.js'
 
 /** Static route entry — callers statically import handlers and declare method/path. */
@@ -28,35 +28,6 @@ export interface StaticAutoRouterOptions {
   onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
 }
 
-type LogFn = (level: 'info' | 'warn' | 'error', message: string) => void
-
-function resolveAuth(options: {
-  routePath: string
-  method: string
-  routeMeta?: { requiresAuth?: boolean }
-  defaultRequiresAuth: boolean
-  forcePublic?: string[]
-  forceProtected?: string[]
-}): { requiresAuth: boolean; matchedPublicPattern?: string; matchedProtectedPattern?: string } {
-  const { routePath, method, routeMeta, defaultRequiresAuth, forcePublic, forceProtected } = options
-  const matchedPublicPattern = forcePublic?.find((pattern) => matchesFilter(routePath, method, pattern))
-  const matchedProtectedPattern = forceProtected?.find((pattern) => matchesFilter(routePath, method, pattern))
-
-  if (routeMeta?.requiresAuth !== undefined) {
-    return { requiresAuth: routeMeta.requiresAuth, matchedPublicPattern, matchedProtectedPattern }
-  }
-
-  if (matchedProtectedPattern) {
-    return { requiresAuth: true, matchedPublicPattern, matchedProtectedPattern }
-  }
-
-  if (matchedPublicPattern) {
-    return { requiresAuth: false, matchedPublicPattern, matchedProtectedPattern }
-  }
-
-  return { requiresAuth: defaultRequiresAuth, matchedPublicPattern, matchedProtectedPattern }
-}
-
 /** Static router plugin for runtimes without filesystem access. */
 export function staticAutoRouter(options: StaticAutoRouterOptions) {
   const {
@@ -76,12 +47,20 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
 
     if (!logging) return
 
-    if (level === 'info') console.log(message)
-    else if (level === 'warn') console.warn(message)
-    else console.error(message)
+    switch (level) {
+      case 'info':
+        console.log(message)
+        break
+      case 'warn':
+        console.warn(message)
+        break
+      case 'error':
+        console.error(message)
+        break
+    }
   }
 
-  return async function (app: any) {
+  return async function (app: AppLike) {
     if (!app) {
       throw new Error('Static auto-router plugin requires an application instance')
     }
@@ -95,25 +74,17 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
     }
 
     const registeredRoutes: Set<string> = app.$registeredRoutes
-    const matchedForcePublicPatterns = new Set<string>()
-    const matchedForceProtectedPatterns = new Set<string>()
-    const overriddenByMeta: Array<{ route: string; pattern: string; type: string }> = []
-    const conflictRoutes: Array<{ route: string; publicPattern: string; protectedPattern: string }> = []
+    const tracker = new ForcePatternTracker()
 
     log('info', `🔄 Loading ${routes.length} static routes`)
 
-    // Buffer route log lines for sorted output
-    // 缓存路由日志行，用于排序输出
     const routeLogLines: Array<{ path: string; method: string; line: string }> = []
 
     for (const { method, path: routePath, handler: rawHandler } of routes) {
       const normalizedMethod = method.toLowerCase()
 
-      // Reject routes whose path uses the file-name [param] syntax — the `-` → `/`
-      // conversion is a file-naming concern, static routes must be written in
-      // Express-style `:param` form directly.
-      // 拒绝路径中使用文件名 [param] 语法的路由——连字符转斜杠是文件命名的规则，
-      // 静态路由必须直接写成 Express 风格的 :param 形式。
+      // Reject routes whose path uses the file-name [param] syntax — static routes
+      // must be written in Express-style `:param` form directly.
       if (routePath.includes('[') || routePath.includes(']')) {
         try {
           validateRouteName(routePath)
@@ -128,11 +99,6 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
         continue
       }
 
-      // Parameter names keep their original casing — the registered path and
-      // ctx.params keys match how the user wrote them. Duplicate detection is
-      // case-insensitive on param names (`:UserId` / `:userid` → same route).
-      // 参数名保留原始大小写——注册的 path 与 ctx.params 键名与用户书写一致。
-      // 去重对参数名大小写不敏感（`:UserId` / `:userid` 视为同一条路由）。
       const routeKey = `${normalizedMethod.toUpperCase()} ${normalizeParamNames(routePath)}`
 
       if (registeredRoutes.has(routeKey)) {
@@ -156,7 +122,6 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
         handler = handler.handler
       } else if (typeof handler === 'function') {
         // handler is a plain function — no op needed
-        // handler 是纯函数 — 无需额外操作
       } else if (typeof handler === 'object' && handler !== null && typeof (handler as Record<string, unknown>).handler === 'function') {
         const raw = handler as { handler: Function; meta?: { requiresAuth?: boolean }; middlewares?: RouteMiddleware[] }
         routeMeta = raw.meta
@@ -176,21 +141,16 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
         forceProtected,
       })
 
-      if (authResult.matchedPublicPattern) matchedForcePublicPatterns.add(authResult.matchedPublicPattern)
-      if (authResult.matchedProtectedPattern) matchedForceProtectedPatterns.add(authResult.matchedProtectedPattern)
+      tracker.addMatch(authResult.matchedPublicPattern, authResult.matchedProtectedPattern)
 
       if (routeMeta?.requiresAuth !== undefined) {
         if (authResult.matchedProtectedPattern) {
-          overriddenByMeta.push({ route: routePath, pattern: authResult.matchedProtectedPattern, type: 'forceProtected' })
+          tracker.addOverride(routePath, authResult.matchedProtectedPattern, 'forceProtected')
         } else if (authResult.matchedPublicPattern) {
-          overriddenByMeta.push({ route: routePath, pattern: authResult.matchedPublicPattern, type: 'forcePublic' })
+          tracker.addOverride(routePath, authResult.matchedPublicPattern, 'forcePublic')
         }
       } else if (authResult.matchedPublicPattern && authResult.matchedProtectedPattern) {
-        conflictRoutes.push({
-          route: routePath,
-          publicPattern: authResult.matchedPublicPattern,
-          protectedPattern: authResult.matchedProtectedPattern,
-        })
+        tracker.addConflict(routePath, authResult.matchedPublicPattern, authResult.matchedProtectedPattern)
       }
 
       const authMark = authResult.requiresAuth ? ' 🔒' : ''
@@ -211,39 +171,15 @@ export function staticAutoRouter(options: StaticAutoRouterOptions) {
         app.$routes.publicRoutes.push({ method: normalizedMethod.toUpperCase(), path: routePath })
       }
 
-      app[normalizedMethod](routePath, ...(routeMiddlewares ?? []), handler)
+      (app as Record<string, Function>)[normalizedMethod](routePath, ...(routeMiddlewares ?? []), handler)
     }
 
-    // Flush sorted route registration logs
-    // 排序后输出所有路由注册日志
     routeLogLines.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method))
     for (const { line } of routeLogLines) {
       log('info', line)
     }
 
-    for (const { route, publicPattern, protectedPattern } of conflictRoutes) {
-      log('warn', `⚠️  Route "${route}" matched both forcePublic ("${publicPattern}") and forceProtected ("${protectedPattern}") — forceProtected wins`)
-    }
-
-    for (const { route, pattern, type } of overriddenByMeta) {
-      log('warn', `⚠️  ${type} pattern "${pattern}" matched "${route}" but has no effect — route has explicit createHandler meta`)
-    }
-
-    if (forcePublic) {
-      for (const pattern of forcePublic) {
-        if (!matchedForcePublicPatterns.has(pattern)) {
-          log('warn', `⚠️  forcePublic pattern "${pattern}" did not match any registered route (check for typos or outdated config)`)
-        }
-      }
-    }
-
-    if (forceProtected) {
-      for (const pattern of forceProtected) {
-        if (!matchedForceProtectedPatterns.has(pattern)) {
-          log('warn', `⚠️  forceProtected pattern "${pattern}" did not match any registered route (check for typos or outdated config)`)
-        }
-      }
-    }
+    tracker.logWarnings(log, forcePublic, forceProtected)
 
     log('info', `📋 Registered routes:`)
     if (app.$routes.all.length === 0) {

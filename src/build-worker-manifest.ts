@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import { readdirSync, statSync, mkdirSync, writeFileSync } from 'fs'
-import { join, resolve, relative, dirname, basename } from 'path'
-import { validateRouteName, parseRouteName, parseDirSegment, normalizeParamNames } from './parse-route.js'
-
-const HTTP_METHODS = ['get', 'post', 'put', 'delete', 'patch', 'head', 'options']
+import { join, resolve, relative, dirname } from 'path'
+import { HTTP_METHODS } from './constants.js'
+import { validateFileName } from './validation.js'
+import { parseRouteName, parseDirectorySegment, normalizeParamNames } from './parse-route.js'
 
 interface RouteEntry {
   method: string
@@ -21,41 +21,17 @@ interface GenerateManifestOptions {
   ext: string
 }
 
-function validateFileName(fileName: string): { valid: boolean; method?: string; error?: string } {
-  const nameWithoutExt = fileName.replace(/\.(ts|js)$/, '')
-  if (HTTP_METHODS.includes(nameWithoutExt)) {
-    return { valid: true, method: nameWithoutExt }
-  }
-  for (const m of HTTP_METHODS) {
-    if (nameWithoutExt.startsWith(m + '-')) {
-      // Validate parameter syntax in the route name (throws on malformed [param])
-      // 校验路由名中的参数语法（遇到非法 [param] 会抛错）
-      const routeName = nameWithoutExt.substring(m.length + 1)
-      if (routeName) {
-        try {
-          validateRouteName(routeName)
-        } catch (err) {
-          return { valid: false, error: err instanceof Error ? err.message : String(err) }
-        }
-      }
-      return { valid: true, method: m }
-    }
-  }
-  return { valid: false }
-}
-
 function sanitizeIdentifier(path: string): string {
   return (
     'handler_' +
     path
       .replace(/\.(ts|js)$/, '')
-      .replace(/[^a-zA-Z0-9]/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/_$/, '')
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .replace(/^_|_$/g, '')
   )
 }
 
-function scanDir(
+function scanDirectory(
   dirPath: string,
   basePath: string,
   controllersRoot: string,
@@ -66,24 +42,22 @@ function scanDir(
 
   for (const file of files) {
     const filePath = join(dirPath, file)
-    let stat: ReturnType<typeof statSync>
+    let fileStat: ReturnType<typeof statSync>
     try {
-      stat = statSync(filePath)
+      fileStat = statSync(filePath)
     } catch {
       continue
     }
 
-    if (stat.isDirectory()) {
+    if (fileStat.isDirectory()) {
       let dirSegment: string
       try {
-        dirSegment = parseDirSegment(file)
+        dirSegment = parseDirectorySegment(file)
       } catch {
-        // Skip directories with invalid [param] syntax
-        // 跳过含非法 [param] 语法的目录
         continue
       }
       try {
-        scanDir(filePath, basePath ? `${basePath}/${dirSegment}` : `/${dirSegment}`, controllersRoot, ext, routes)
+        scanDirectory(filePath, basePath ? `${basePath}/${dirSegment}` : `/${dirSegment}`, controllersRoot, ext, routes)
       } catch {
         // Skip unreadable subdirectories
       }
@@ -131,12 +105,11 @@ export function generateManifest(options: GenerateManifestOptions): string {
   const fullDir = resolve(controllersDir)
 
   try {
-    scanDir(fullDir, '', fullDir, ext, routes)
+    scanDirectory(fullDir, '', fullDir, ext, routes)
   } catch (err: unknown) {
     throw new Error(`Failed to scan directory: ${err instanceof Error ? err.message : String(err)}`)
   }
 
-  // Apply prefix and normalize
   const normalizedPrefix = prefix.length > 1 && prefix.endsWith('/') ? prefix.slice(0, -1) : prefix
   for (const route of routes) {
     route.pattern = normalizedPrefix ? `${normalizedPrefix}${route.pattern}`.replace(/\/+/g, '/') : route.pattern
@@ -148,17 +121,13 @@ export function generateManifest(options: GenerateManifestOptions): string {
     const aHasParam = a.pattern.includes(':')
     const bHasParam = b.pattern.includes(':')
 
-    // If one has params and the other doesn't, non-param comes first
     if (aHasParam && !bHasParam) return 1
     if (!aHasParam && bHasParam) return -1
 
-    // Otherwise sort alphabetically by pattern, then method
     return a.pattern.localeCompare(b.pattern) || a.method.localeCompare(b.method)
   })
 
-  // Detect duplicates — param-name casing is folded for the key, so
-  // `[userId]` and `[UserID]` patterns are treated as the same route.
-  // 去重键对参数名大小写不敏感，`[userId]` 与 `[UserID]` 视为同一条路由。
+  // Detect duplicates — param-name casing is folded for the key
   const seen = new Set<string>()
   const uniqueRoutes: RouteEntry[] = []
   for (const route of routes) {
@@ -171,7 +140,6 @@ export function generateManifest(options: GenerateManifestOptions): string {
     uniqueRoutes.push(route)
   }
 
-  // Calculate relative imports from outputFile directory
   const outputDir = dirname(resolve(outputFile))
   const imports: string[] = []
   for (const route of uniqueRoutes) {
@@ -182,12 +150,11 @@ export function generateManifest(options: GenerateManifestOptions): string {
   }
 
   const routeEntries = uniqueRoutes
-    .map(
-      r => `  { pattern: '${r.pattern}', method: '${r.method}', handler: ${r.importId} },`
-    )
+    .map(r => `  { pattern: '${r.pattern}', method: '${r.method}', handler: ${r.importId} },`)
     .join('\n')
 
-  const regenerateCmd = `npx auto-router-build-manifest ${controllersDir} ${outputFile} --prefix ${prefix}${ext !== 'ts' ? ` --ext ${ext}` : ''}`
+  const extFlag = ext !== 'ts' ? ` --ext ${ext}` : ''
+  const regenerateCmd = `npx auto-router-build-manifest ${controllersDir} ${outputFile} --prefix ${prefix}${extFlag}`
 
   return `// AUTO-GENERATED by @chaeco/auto-router build-worker-manifest
 // Do not edit manually.

@@ -1,3 +1,4 @@
+import { type AppLike } from './handler.js';
 /** Internal options passed from autoRouter() after normalization. */
 export interface LoadRoutesOptions {
     dir: string;
@@ -9,5 +10,5 @@ export interface LoadRoutesOptions {
     forceProtected?: string[];
     onLog?: (level: 'info' | 'warn' | 'error', message: string) => void;
 }
-export declare function loadRoutes(app: any, options: LoadRoutesOptions): Promise<void>;
+export declare function loadRoutes(app: AppLike, options: LoadRoutesOptions): Promise<void>;
 //# sourceMappingURL=load-routes.d.ts.map

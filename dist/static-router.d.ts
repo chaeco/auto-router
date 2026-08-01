@@ -1,3 +1,4 @@
+import { type AppLike } from './handler.js';
 /** Static route entry — callers statically import handlers and declare method/path. */
 export interface StaticRoute {
     /** HTTP method, e.g. 'get', 'post', 'put', 'delete', 'patch'. */
@@ -23,5 +24,5 @@ export interface StaticAutoRouterOptions {
     onLog?: (level: 'info' | 'warn' | 'error', message: string) => void;
 }
 /** Static router plugin for runtimes without filesystem access. */
-export declare function staticAutoRouter(options: StaticAutoRouterOptions): (app: any) => Promise<void>;
+export declare function staticAutoRouter(options: StaticAutoRouterOptions): (app: AppLike) => Promise<void>;
 //# sourceMappingURL=static-router.d.ts.map

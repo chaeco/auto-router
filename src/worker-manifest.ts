@@ -36,24 +36,24 @@ export interface WorkerRouterOptions<TEnv = unknown, TCtx = ExecutionContext> {
 type MatchResult = { params: Record<string, string> } | null
 
 function matchRoute(pattern: string, pathname: string): MatchResult {
-  const patternSegs = pattern.split('/').filter(Boolean)
-  const pathSegs = pathname.split('/').filter(Boolean)
+  const patternSegments = pattern.split('/').filter(Boolean)
+  const pathSegments = pathname.split('/').filter(Boolean)
 
-  if (patternSegs.length !== pathSegs.length) return null
+  if (patternSegments.length !== pathSegments.length) return null
 
   const params: Record<string, string> = {}
-  for (let i = 0; i < patternSegs.length; i++) {
-    const ps = patternSegs[i]
-    const vs = pathSegs[i]
-    if (ps.startsWith(':')) {
+  for (let i = 0; i < patternSegments.length; i++) {
+    const patternSegment = patternSegments[i]
+    const valueSegment = pathSegments[i]
+    if (patternSegment.startsWith(':')) {
       // decodeURIComponent can throw URIError on malformed sequences
       // Return null (no match) instead of crashing the entire request
       try {
-        params[ps.slice(1)] = decodeURIComponent(vs)
+        params[patternSegment.slice(1)] = decodeURIComponent(valueSegment)
       } catch {
         return null
       }
-    } else if (ps !== vs) {
+    } else if (patternSegment !== valueSegment) {
       return null
     }
   }
@@ -71,7 +71,6 @@ export function createWorkerRouter<TEnv = unknown, TCtx = ExecutionContext>(
     let middlewares = route.middlewares
     if (isRouteConfig(handler)) {
       // createHandler middlewares run before route-level middlewares
-      // createHandler 中间件先于路由级中间件执行
       middlewares = (handler.middlewares ?? []).concat(route.middlewares ?? [])
       handler = handler.handler
     }
@@ -109,8 +108,6 @@ export function createWorkerRouter<TEnv = unknown, TCtx = ExecutionContext>(
       let result: unknown
       try {
         // Runtime validation: handler must be a function
-        // (generateManifest guarantees this for CLI-generated manifests,
-        // but hand-written manifests or dynamic routes may violate this)
         if (typeof matched.handler !== 'function') {
           throw new TypeError(`Handler for ${req.method} ${pathname} is not a function (got ${typeof matched.handler})`)
         }
@@ -123,10 +120,8 @@ export function createWorkerRouter<TEnv = unknown, TCtx = ExecutionContext>(
         }
 
         // Koa-style chain: each middleware receives (ctx, next); the last next
-        // invokes the route handler. A middleware that short-circuits (no next
-        // call, e.g. zodValidator on a 400) stops the chain without the handler.
-        // Koa 风格中间件链：每个中间件接收 (ctx, next)，最后的 next 调用路由 handler；
-        // 短路中间件（不调用 next，如 zodValidator 校验失败时）会终止链路，不再执行 handler。
+        // invokes the route handler. A short-circuiting middleware (no next call)
+        // stops the chain without the handler.
         const dispatch = async (i: number): Promise<unknown> => {
           if (i === middlewares.length) {
             return (matched.handler as (ctx: WorkerRouteContext<TEnv, TCtx>) => unknown)(routeCtx)
@@ -136,12 +131,9 @@ export function createWorkerRouter<TEnv = unknown, TCtx = ExecutionContext>(
         }
         result = await dispatch(0)
 
-        // Response serialization precedence
         if (result instanceof Response) return result
 
         if (result !== undefined && result !== null) {
-          // JSON.stringify can throw on circular references, BigInt, etc.
-          // We catch it here to route through onError
           let jsonString: string
           try {
             jsonString = JSON.stringify(result)

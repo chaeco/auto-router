@@ -5,6 +5,7 @@ import { isRouteConfig } from './handler.js';
 import { validateFileName, isHttpMethodKeyword } from './validation.js';
 import { resolveAuth, ForcePatternTracker } from './auth-resolver.js';
 import { parseRouteName, parseDirectorySegment, normalizeParamNames } from './parse-route.js';
+import { isIgnored } from './ignore.js';
 function createLogger(onLog, logging) {
     return (level, message) => {
         if (onLog) {
@@ -27,7 +28,7 @@ function createLogger(onLog, logging) {
     };
 }
 export async function loadRoutes(app, options) {
-    const { dir, prefix, defaultRequiresAuth, strict, forcePublic, forceProtected } = options;
+    const { dir, prefix, defaultRequiresAuth, strict, forcePublic, forceProtected, ignore } = options;
     const log = createLogger(options.onLog, options.logging);
     const tracker = new ForcePatternTracker();
     const importPromises = [];
@@ -56,6 +57,11 @@ export async function loadRoutes(app, options) {
                 log('warn', `   ⚠️  ${err instanceof Error ? err.message : String(err)}`);
                 continue;
             }
+            // Skip ignored entries before validation — a matched folder is skipped
+            // whole (no recursion), a matched file silently (no error log). The
+            // entry's kind decides which patterns apply (file / dir / both).
+            if (isIgnored(file, fileStat.isDirectory(), ignore))
+                continue;
             if (fileStat.isDirectory()) {
                 if (isHttpMethodKeyword(file)) {
                     log('warn', `⚠️  Warning: Directory name "${file}" is an HTTP method keyword, consider renaming`);

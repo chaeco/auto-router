@@ -93,6 +93,7 @@ app.extend(autoRouter({
   prefix: ['/api', '/v1'],   // multi-prefix if needed
   defaultRequiresAuth: false, // blacklist mode
   forceProtected: ['/api/admin/*', 'POST /api/users'],
+  ignore: ['^__'],           // skip __-prefixed files/folders (regex on entry name)
 }))
 ```
 

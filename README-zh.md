@@ -19,6 +19,7 @@
 - 🎛️ Prefix 数组支持 — 同一控制器目录注册到多个前缀
 - 🧩 合并式多配置支持 — 一次调用配置多个目录
 - 📢 通过 `onLog` 回调自定义日志输出
+- 🙈 通过 `ignore` 按名称正则跳过文件/文件夹 — 如 `^__` 忽略 `__` 开头的条目
 - 🌐 `staticAutoRouter` 支持无文件系统的运行时（边缘函数、打包应用）
 - ☁️ **Cloudflare Workers 支持** — 构建时清单生成 + 零依赖 `createWorkerRouter`
 
@@ -78,6 +79,7 @@ npx auto-router-init-skills
 - [参数校验](#参数校验)
 - [类型安全](#类型安全)
 - [日志](#日志)
+- [忽略](#忽略)
 - [验证规则](#验证规则)
 - [最佳实践](#最佳实践)
 - [无文件系统访问的运行时](#无文件系统访问的运行时)
@@ -798,6 +800,53 @@ autoRouter({
   },
 })
 ```
+
+---
+
+## 忽略
+
+通过正则匹配条目**名称**，在扫描时跳过文件或文件夹——适用于排除辅助文件、草稿控制器或 `__` 开头的脚手架目录，避免它们被当作路由。
+
+```typescript
+autoRouter({
+  dir: './controllers',
+  ignore: ['^__'], // 忽略所有名称以 `__` 开头的文件或文件夹
+})
+```
+
+模式支持正则字符串、`RegExp` 实例或 `{ pattern, type }` 对象，匹配每个条目的**名称（basename）**。默认每个模式对文件和文件夹**都生效**；可通过 `type` 限定范围：
+
+```typescript
+ignore: [
+  '^__',                                      // 简写——文件和文件夹
+  { pattern: '^_internal', type: 'dir' },     // 仅文件夹
+  { pattern: '-draft', type: 'file' },        // 仅文件
+]
+```
+
+`type` 取值 `'file' | 'dir' | 'both'`（默认 `'both'`）。因为 `^__` 匹配的是文件夹名本身，所以 `__` 开头的文件夹在**任意层级**都会被跳过——命中的文件夹整体跳过，其内部内容一并忽略。文件模式匹配**完整文件名**——含 method 前缀和扩展名——因此 `get-draft.ts` 匹配 `-draft`，而不是 `^draft`。
+
+```
+controllers/
+  get-users.ts        → GET /api/users
+  __helpers.ts        → 被忽略（匹配 ^__）
+  __internal/
+    get-secret.ts     → 被忽略——文件夹匹配 ^__，整棵子树跳过
+  users/
+    __draft/
+      post-draft.ts   → 被忽略——任意层级的 __ 文件夹都被跳过
+```
+
+被忽略的条目在**校验之前**就被跳过，因此不会产生 "Skip file" 错误日志。非法正则或 `type` 在插件创建时抛错：
+
+```typescript
+autoRouter({ dir: './controllers', ignore: ['['] })
+// ❌ 错误:Invalid ignore pattern at index 0 ("["): Unterminated character class
+autoRouter({ dir: './controllers', ignore: [{ pattern: '^__', type: 'folder' }] })
+// ❌ 错误:Invalid ignore type at index 0 ("folder"): expected "file", "dir" or "both"
+```
+
+> Cloudflare Workers 的 `auto-router-build-manifest` CLI 支持可重复的 `--ignore <正则>` 参数（始终对文件和文件夹生效）。
 
 ---
 

@@ -155,4 +155,23 @@ describe('auto-router-build-manifest CLI', () => {
     const generatedContent = readFileSync(outputFile, 'utf-8')
     expect(generatedContent).toContain('--ext js')
   })
+
+  it('respects --ignore flags and preserves them in the regenerate command', () => {
+    const controllersDir = join(testDir, 'controllers')
+    const outputFile = join(testDir, 'routes.ts')
+    mkdirSync(join(controllersDir, '__internal'), { recursive: true })
+    writeFileSync(join(controllersDir, '__internal', 'get-secret.ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'get-users.ts'), 'export default async (ctx) => {}')
+
+    const result = spawnSync('node', [cliPath, controllersDir, outputFile, '--prefix', '/api', '--ignore', '^__'], {
+      encoding: 'utf-8'
+    })
+
+    expect(result.status).toBe(0)
+    const generatedContent = readFileSync(outputFile, 'utf-8')
+    expect(generatedContent).toContain('handler_get_users')
+    expect(generatedContent).not.toContain('handler_secret')
+    expect(generatedContent).toContain("{ pattern: '/api/users'")
+    expect(generatedContent).toContain("--ignore '^__'")
+  })
 })

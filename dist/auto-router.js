@@ -1,4 +1,5 @@
 import { loadRoutes } from './load-routes.js';
+import { compileIgnorePatterns } from './ignore.js';
 /**
  * Auto router plugin - factory function
  *
@@ -20,6 +21,11 @@ import { loadRoutes } from './load-routes.js';
  *     true: Only allow pure function and createHandler export methods
  *     false: Allow ordinary object { handler, meta } export method, but will show warning
  *   - logging: Whether to output route registration logs (default: true)
+ *   - ignore: File/folder names to skip during scanning, matched as regex
+ *     patterns against each entry's basename (e.g. '^__' skips `__`-prefixed
+ *     files AND folders at any depth). Accepts regex strings, RegExp instances,
+ *     or { pattern, type: 'file' | 'dir' | 'both' } objects to scope a pattern
+ *     to files, folders, or both (a bare string / RegExp means both).
  *   - onLog: Custom logging callback for integration with own logging systems
  *
  * Usage:
@@ -39,6 +45,8 @@ export function autoRouter(options = {}) {
     const optionsArray = Array.isArray(options) ? options : [options];
     const expandedOptionsArray = [];
     for (const config of optionsArray) {
+        // Compile once per config — shared by every prefix the config expands into.
+        const ignore = compileIgnorePatterns(config.ignore);
         const prefixes = Array.isArray(config.prefix)
             ? config.prefix
             : [config.prefix !== undefined ? config.prefix : '/api'];
@@ -52,6 +60,7 @@ export function autoRouter(options = {}) {
                 logging: config.logging ?? true,
                 forcePublic: config.forcePublic,
                 forceProtected: config.forceProtected,
+                ignore,
                 onLog: config.onLog,
             });
         }

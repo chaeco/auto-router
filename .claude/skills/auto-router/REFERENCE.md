@@ -74,6 +74,17 @@ A hyphen `-` is only converted to `/` when it is adjacent to a dynamic parameter
 - Unreadable directories (permission denied) are **skipped** with a warning; sibling files continue scanning
 - Broken symlinks are **skipped** with a warning
 
+### Ignore patterns
+
+`ignore` is an array of patterns — regex strings, `RegExp` instances, or `{ pattern, type }` objects — matched against each entry's **basename** (a file or folder name). Each pattern applies to **files, folders, or both** via `type` (`'file' | 'dir' | 'both'`, default `'both'`; a bare string / RegExp means both). A matched entry is skipped **before validation** (the entry's kind comes from stat, so the target check is accurate):
+
+- A matched **folder** is skipped whole (contents included, no recursion)
+- A matched **file** is skipped silently (no "Skip file" error log)
+- File patterns match the **full file name** — method prefix + extension — e.g. `-draft` matches `get-draft.ts`
+- `^__` ignores `__`-prefixed files and folders at **any depth**; `{ pattern: '^__', type: 'dir' }` ignores only folders
+- Invalid regexes or `type` values throw at plugin creation (fail-fast)
+- The `auto-router-build-manifest` CLI supports the same via a repeatable `--ignore <regex>` flag (applies to both; typed/RegExp entries aren't round-tripped in the regenerate command)
+
 ## Auth resolution flow
 
 ```
@@ -220,6 +231,10 @@ export default createHandler(
 // From '@chaeco/auto-router'
 createHandler<TCtx, TRes>(handler, meta?, middlewares?): RouteConfig
 isRouteConfig(obj): obj is RouteConfig
+
+type IgnoreTarget = 'file' | 'dir' | 'both'                     // for `ignore` entry `type`
+type IgnorePatternEntry = { pattern: string | RegExp; type?: IgnoreTarget }
+type IgnorePattern = string | RegExp | IgnorePatternEntry        // for the `ignore` option
 
 type RouteHandler<TCtx, TRes>  // conditional: single-ctx vs dual-param
 type RouteMiddleware<TCtx>  // (ctx, next) => Promise<any> | any — Koa/Hoa-style

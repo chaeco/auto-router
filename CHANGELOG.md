@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`ignore` option** — skip files/folders during scanning by matching their **basename** against regex patterns. Accepts strings, `RegExp` instances, or `{ pattern, type }` objects where `type` (`'file' | 'dir' | 'both'`, default `'both'`) scopes a pattern to files, folders, or both. `ignore: ['^__']` ignores `__`-prefixed files and folders at any depth; a matched folder is skipped whole. Ignored entries are skipped before validation (no "Skip file" errors). Invalid regexes or `type` values throw at plugin creation.
+- **`auto-router-build-manifest --ignore <regex>`** — repeatable CLI flag mirroring the `ignore` option for Cloudflare Workers manifests; preserved in the generated file's `Regenerate:` command.
+- **`IgnorePattern` / `IgnorePatternEntry` / `IgnoreTarget` types** — exported from the public API (`@chaeco/auto-router`).
+
 ## [0.1.0] - 2026-08-01
 
 ### Added

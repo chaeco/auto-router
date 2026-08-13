@@ -281,4 +281,52 @@ describe('generateManifest', () => {
     const importCount = (manifest.match(/import handler_/g) || []).length
     expect(importCount).toBe(1)
   })
+
+  it('ignores entries matching ignore patterns', () => {
+    const controllersDir = join(testDir, 'controllers')
+    const outputFile = join(testDir, 'output', 'routes.ts')
+    mkdirSync(join(controllersDir, '__internal'), { recursive: true })
+    writeFileSync(join(controllersDir, '__internal', 'get-secret.ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'get-users.ts'), 'export default async (ctx) => {}')
+
+    const manifest = generateManifest({ controllersDir, outputFile, prefix: '/api', ext: 'ts', ignore: ['^__'] })
+
+    expect(manifest).toContain('handler_get_users')
+    expect(manifest).not.toContain('handler_secret')
+    expect(manifest).toContain("{ pattern: '/api/users'")
+    expect(manifest).toContain("--ignore '^__'")
+  })
+
+  it('throws on invalid ignore regex', () => {
+    const controllersDir = join(testDir, 'controllers')
+    const outputFile = join(testDir, 'output', 'routes.ts')
+    mkdirSync(controllersDir, { recursive: true })
+    writeFileSync(join(controllersDir, 'get-users.ts'), 'export default async (ctx) => {}')
+
+    expect(() => generateManifest({ controllersDir, outputFile, prefix: '/api', ext: 'ts', ignore: ['['] })).toThrow(
+      /Invalid ignore pattern at index 0/
+    )
+  })
+
+  it('respects per-pattern file/dir targets in ignore', () => {
+    const controllersDir = join(testDir, 'controllers')
+    const outputFile = join(testDir, 'output', 'routes.ts')
+    mkdirSync(join(controllersDir, 'admin'), { recursive: true })
+    // admin/get.ts would be GET /api/admin (from the folder); post-admin.ts is POST /api/admin
+    writeFileSync(join(controllersDir, 'admin', 'get.ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(controllersDir, 'post-admin.ts'), 'export default async (ctx) => {}')
+
+    const manifest = generateManifest({
+      controllersDir,
+      outputFile,
+      prefix: '/api',
+      ext: 'ts',
+      ignore: [{ pattern: 'admin', type: 'dir' }],
+    })
+
+    // Dir-scoped pattern ignores the admin/ folder but not post-admin.ts
+    expect(manifest).toContain('handler_post_admin')
+    expect(manifest).toContain("{ pattern: '/api/admin', method: 'POST'")
+    expect(manifest).not.toContain('handler_admin_get')
+  })
 })

@@ -6,6 +6,7 @@ import { HTTP_METHODS } from './constants.js'
 import { validateFileName, isHttpMethodKeyword } from './validation.js'
 import { resolveAuth, ForcePatternTracker } from './auth-resolver.js'
 import { validateDirectorySegment, parseRouteName, parseDirectorySegment, normalizeParamNames } from './parse-route.js'
+import { isIgnored, type CompiledIgnorePattern } from './ignore.js'
 
 /** Internal options passed from autoRouter() after normalization. */
 export interface LoadRoutesOptions {
@@ -16,6 +17,7 @@ export interface LoadRoutesOptions {
   logging: boolean
   forcePublic?: string[]
   forceProtected?: string[]
+  ignore: CompiledIgnorePattern[]
   onLog?: (level: 'info' | 'warn' | 'error', message: string) => void
 }
 
@@ -46,7 +48,7 @@ export async function loadRoutes(
   app: AppLike,
   options: LoadRoutesOptions
 ) {
-  const { dir, prefix, defaultRequiresAuth, strict, forcePublic, forceProtected } = options
+  const { dir, prefix, defaultRequiresAuth, strict, forcePublic, forceProtected, ignore } = options
   const log = createLogger(options.onLog, options.logging)
 
   const tracker = new ForcePatternTracker()
@@ -80,6 +82,11 @@ export async function loadRoutes(
         log('warn', `   ⚠️  ${err instanceof Error ? err.message : String(err)}`)
         continue
       }
+
+      // Skip ignored entries before validation — a matched folder is skipped
+      // whole (no recursion), a matched file silently (no error log). The
+      // entry's kind decides which patterns apply (file / dir / both).
+      if (isIgnored(file, fileStat.isDirectory(), ignore)) continue
 
       if (fileStat.isDirectory()) {
         if (isHttpMethodKeyword(file)) {

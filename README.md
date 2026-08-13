@@ -19,6 +19,7 @@ File-based automatic router plugin for Node.js frameworks (Hoa, Koa, Fastify, Ex
 - 🎛️ Prefix array support — same controllers under multiple prefixes
 - 🧩 Merged multi-configuration support — one call, many directories
 - 📢 Custom logging via `onLog` callback
+- 🙈 Skip files/folders by name regex via `ignore` — e.g. `^__` ignores `__`-prefixed entries
 - 🌐 `staticAutoRouter` for runtimes without filesystem access (edge functions, bundled apps)
 - ☁️ **Cloudflare Workers support** — build-time manifest generation + zero-dependency `createWorkerRouter`
 
@@ -77,6 +78,7 @@ This copies skill files into your project's `.claude/skills/auto-router/` and `.
   - [Tags / Grouping](#tags--grouping)
 - [Type Safety](#type-safety)
 - [Logging](#logging)
+- [Ignore](#ignore)
 - [Validation Rules](#validation-rules)
 - [Best Practices](#best-practices)
 - [Runtimes Without Filesystem Access](#runtimes-without-filesystem-access)
@@ -700,6 +702,53 @@ autoRouter({
   },
 })
 ```
+
+---
+
+## Ignore
+
+Skip files or folders during scanning by matching their **name** against regex patterns — useful for excluding helpers, draft controllers, or `__`-prefixed scaffolding from being treated as routes.
+
+```typescript
+autoRouter({
+  dir: './controllers',
+  ignore: ['^__'], // ignore any file OR folder whose name starts with `__`
+})
+```
+
+Patterns accept regex strings, `RegExp` instances, or `{ pattern, type }` objects, and match against each entry's **basename**. By default a pattern applies to **both** files and folders; scope it with `type`:
+
+```typescript
+ignore: [
+  '^__',                                      // shorthand — files AND folders
+  { pattern: '^_internal', type: 'dir' },     // folders only
+  { pattern: '-draft', type: 'file' },        // files only
+]
+```
+
+`type` accepts `'file' | 'dir' | 'both'` (default `'both'`). Because `^__` matches the folder name itself, `__`-prefixed folders are skipped **at any depth** — a matched folder is skipped whole, contents included. File patterns match the **full file name** — method prefix and extension included — so `get-draft.ts` matches `-draft`, not `^draft`.
+
+```
+controllers/
+  get-users.ts        → GET /api/users
+  __helpers.ts        → ignored (matches ^__)
+  __internal/
+    get-secret.ts     → ignored — folder matches ^__, subtree skipped
+  users/
+    __draft/
+      post-draft.ts   → ignored — folder matches ^__ at any depth
+```
+
+Ignored entries are skipped **before** validation, so they never produce "Skip file" errors. An invalid regex or `type` throws at plugin creation:
+
+```typescript
+autoRouter({ dir: './controllers', ignore: ['['] })
+// ❌ Error: Invalid ignore pattern at index 0 ("["): Unterminated character class
+autoRouter({ dir: './controllers', ignore: [{ pattern: '^__', type: 'folder' }] })
+// ❌ Error: Invalid ignore type at index 0 ("folder"): expected "file", "dir" or "both"
+```
+
+> The `auto-router-build-manifest` CLI supports a repeatable `--ignore <regex>` flag (always applies to files and folders) for Cloudflare Workers manifests.
 
 ---
 

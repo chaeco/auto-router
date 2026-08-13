@@ -1354,4 +1354,243 @@ describe('autoRouter', () => {
     logSpy.mockRestore()
     rmSync(dir, { recursive: true, force: true })
   })
+
+  // ---------------------------------------------------------------------------
+  // Ignore patterns
+  // ---------------------------------------------------------------------------
+
+  it('should ignore files matching ignore patterns (string regex)', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-files')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users.js'), 'export default async (ctx) => {}')
+    // Without ignore, __helpers.js would fail validation and log "Skip file"
+    writeFileSync(join(dir, '__helpers.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const errors: string[] = []
+
+    await autoRouter({
+      dir,
+      prefix: '/api',
+      ignore: ['^__'],
+      onLog: (level, msg) => { if (level === 'error') errors.push(msg) },
+    })(mockApp)
+
+    // __helpers.js is skipped before validation — no "Skip file" error, no route
+    expect(errors).toHaveLength(0)
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users', expect.any(Function))
+    expect(mockApp.get).not.toHaveBeenCalledWith('/api/helpers', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should ignore folders matching ignore patterns (skips whole subtree)', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-folders')
+    const internalDir = join(dir, '__internal')
+    const nestedDraftDir = join(dir, 'users', '__draft')
+    mkdirSync(internalDir, { recursive: true })
+    mkdirSync(nestedDraftDir, { recursive: true })
+    writeFileSync(join(internalDir, 'get-secret.js'), 'export default async (ctx) => {}')
+    writeFileSync(join(nestedDraftDir, 'post-draft.js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, 'get-public.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), post: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api', ignore: ['^__'] })(mockApp)
+
+    // Root-level __internal and nested users/__draft are both skipped whole
+    expect(mockApp.get).toHaveBeenCalledWith('/api/public', expect.any(Function))
+    expect(mockApp.get).not.toHaveBeenCalledWith('/api/secret', expect.any(Function))
+    expect(mockApp.post).not.toHaveBeenCalledWith('/api/users/draft', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should accept RegExp instances in ignore', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-regexp')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users.js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, '__helpers.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api', ignore: [/^__/] })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users', expect.any(Function))
+    expect(mockApp.get).not.toHaveBeenCalledWith('/api/helpers', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should throw on invalid ignore regex at plugin creation', () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-invalid')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users.js'), 'export default async (ctx) => {}')
+
+    expect(() => autoRouter({ dir, prefix: '/api', ignore: ['['] })).toThrow(
+      /Invalid ignore pattern at index 0/
+    )
+
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should keep all routes when ignore pattern matches nothing', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-nomatch')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users.js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, 'post-login.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), post: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api', ignore: ['^zzz'] })(mockApp)
+
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users', expect.any(Function))
+    expect(mockApp.post).toHaveBeenCalledWith('/api/login', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(2)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should apply a dir-scoped ignore pattern to folders only', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-dir-only')
+    const adminDir = join(dir, 'admin')
+    mkdirSync(adminDir, { recursive: true })
+    // admin/get.ts → GET /api/admin; post-admin.js → POST /api/admin
+    writeFileSync(join(adminDir, 'get.ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, 'post-admin.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), post: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api', ignore: [{ pattern: 'admin', type: 'dir' }] })(mockApp)
+
+    // The `admin` folder is ignored, but the file post-admin.js (same name
+    // match, dir-scoped pattern) is not — so only POST /api/admin registers.
+    expect(mockApp.get).not.toHaveBeenCalledWith('/api/admin', expect.any(Function))
+    expect(mockApp.post).toHaveBeenCalledWith('/api/admin', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should apply a file-scoped ignore pattern to files only', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-file-only')
+    const adminDir = join(dir, 'admin')
+    mkdirSync(adminDir, { recursive: true })
+    writeFileSync(join(adminDir, 'get.ts'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, 'post-admin.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), post: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({ dir, prefix: '/api', ignore: [{ pattern: 'admin', type: 'file' }] })(mockApp)
+
+    // The `admin` folder is NOT ignored (file-scoped pattern), so GET /api/admin
+    // registers from admin/get.ts; post-admin.js IS ignored.
+    expect(mockApp.get).toHaveBeenCalledWith('/api/admin', expect.any(Function))
+    expect(mockApp.post).not.toHaveBeenCalledWith('/api/admin', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should mix shorthand and file/dir-scoped ignore patterns', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-mixed')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users.js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, 'get-users-v1.js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, '__helpers.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { })
+
+    await autoRouter({
+      dir,
+      prefix: '/api',
+      ignore: ['^__', { pattern: '-v1\\.js$', type: 'file' }],
+    })(mockApp)
+
+    // '^__' (both) skips __helpers.js; '-v1\.js$' (file) skips get-users-v1.js
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users', expect.any(Function))
+    expect(mockApp.get).not.toHaveBeenCalledWith('/api/users-v1', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    logSpy.mockRestore()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should throw on invalid ignore type', () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-invalid-type')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users.js'), 'export default async (ctx) => {}')
+
+    expect(() => autoRouter({ dir, ignore: [{ pattern: '^__', type: 'folder' }] })).toThrow(
+      /Invalid ignore type at index 0/
+    )
+
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should throw when an ignore entry has no pattern', () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-missing-pattern')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users.js'), 'export default async (ctx) => {}')
+
+    expect(() => autoRouter({ dir, ignore: [{ type: 'dir' }] })).toThrow(
+      /Invalid ignore entry at index 0/
+    )
+
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should throw a clear error for a non-entry ignore value (e.g. null from JS)', () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-null-entry')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users.js'), 'export default async (ctx) => {}')
+
+    // `null as never` simulates a JS caller passing a bad value at runtime
+    expect(() => autoRouter({ dir, ignore: [null as never] })).toThrow(
+      /Invalid ignore entry at index 0: expected a string, RegExp, or \{ pattern, type \} object/
+    )
+
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('should ignore every matching entry even with a /g-flagged RegExp', async () => {
+    const dir = join(process.cwd(), '__tests__', 'controllers-ignore-gflag')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'get-users.js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, '__a.js'), 'export default async (ctx) => {}')
+    writeFileSync(join(dir, '__b.js'), 'export default async (ctx) => {}')
+
+    const mockApp: any = { get: jest.fn(), $routes: undefined }
+    const errors: string[] = []
+
+    await autoRouter({
+      dir,
+      prefix: '/api',
+      ignore: [/^__/g],
+      onLog: (level, msg) => { if (level === 'error') errors.push(msg) },
+    })(mockApp)
+
+    // Without the lastIndex reset, a /g pattern alternates matches and one __
+    // file would slip through validation and log "Skip file".
+    expect(errors).toHaveLength(0)
+    expect(mockApp.get).toHaveBeenCalledWith('/api/users', expect.any(Function))
+    expect(mockApp.get).not.toHaveBeenCalledWith('/api/a', expect.any(Function))
+    expect(mockApp.$routes!.all).toHaveLength(1)
+
+    rmSync(dir, { recursive: true, force: true })
+  })
 })

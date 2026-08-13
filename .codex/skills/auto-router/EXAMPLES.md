@@ -372,3 +372,36 @@ export default createHandler(
 
 Works with file-based `autoRouter`, `staticAutoRouter`, and `createWorkerRouter`
 (Workers run middlewares as a Koa-style chain).
+
+## Scenario 14: Ignore — skip files/folders by regex
+
+Keep scaffolding, helpers, or drafts out of the router without deleting them. Patterns
+match each entry's **basename**; `type` scopes a pattern to files, folders, or both.
+
+```typescript
+// autoRouter config
+app.extend(autoRouter({
+  dir: './controllers',
+  ignore: [
+    '^__',                                   // files AND folders named `__*`
+    { pattern: '^_internal', type: 'dir' },  // folders only — skips whole subtree
+    { pattern: '-draft', type: 'file' },     // files only — matches get-draft.ts
+  ],
+}))
+```
+
+```
+controllers/
+  get-users.ts          → GET /api/users        (registered)
+  get-draft.ts          → ignored — matches '-draft' (file)
+  __helpers.ts          → ignored — matches '^__'   (file)
+  _internal/
+    get-secret.ts       → ignored — folder matches '^_internal', subtree skipped
+  __tests__/
+    get-fixture.ts      → ignored — folder matches '^__' at any depth
+```
+
+Ignored entries are skipped before validation, so they never produce "Skip file"
+errors. A bare string / RegExp means both; invalid regexes or `type` values throw
+at plugin creation.
+

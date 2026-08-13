@@ -34,6 +34,7 @@
     "build:docs": "node scripts/inject-version.js",
     "dev": "tsc --watch",
     "prepack": "npm run build && npm run build:docs",
+    "version:bump": "node scripts/bump-version.js",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },

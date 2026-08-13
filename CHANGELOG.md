@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-13
+
 ### Added
 
 - **`ignore` option** — skip files/folders during scanning by matching their **basename** against regex patterns. Accepts strings, `RegExp` instances, or `{ pattern, type }` objects where `type` (`'file' | 'dir' | 'both'`, default `'both'`) scopes a pattern to files, folders, or both. `ignore: ['^__']` ignores `__`-prefixed files and folders at any depth; a matched folder is skipped whole. Ignored entries are skipped before validation (no "Skip file" errors). Invalid regexes or `type` values throw at plugin creation.
@@ -215,6 +217,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `logging` option — controls console output
 - `defaultRequiresAuth` global permission default
 
+[0.2.0]: https://github.com/chaeco/auto-router/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/chaeco/auto-router/compare/v0.0.14...v0.1.0
 [0.0.14]: https://github.com/chaeco/auto-router/compare/v0.0.13...v0.0.14
 [0.0.13]: https://github.com/chaeco/auto-router/compare/v0.0.12...v0.0.13

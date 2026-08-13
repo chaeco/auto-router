@@ -1075,7 +1075,7 @@ id = "your-kv-namespace-id"
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@chaeco/auto-router": "^0.1.0"
+    "@chaeco/auto-router": "^0.2.0"
   }
 }
 ```

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto Router — 文件即路由 · Node.js</title>
+  <meta name="description" content="Auto Router：基于文件结构的 Node.js 自动路由插件。零配置、类型安全、内置权限元数据，支持 Cloudflare Workers。" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0f14'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='18' font-weight='700' fill='%2322d3ee' text-anchor='middle'%3E%E2%86%92%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <div class="backdrop" aria-hidden="true">
+    <div class="backdrop__grid"></div>
+    <div class="backdrop__glow"></div>
+  </div>
+
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="brand" href="#top">
+        <span class="brand__mark" aria-hidden="true">→</span>
+        <span class="brand__name">auto-router</span>
+      </a>
+      <nav class="nav__links" aria-label="页面导航">
+        <a href="#why">为什么</a>
+        <a href="#naming">命名</a>
+        <a href="#auth">权限</a>
+        <a href="#demo">用法</a>
+        <a href="#workers">Workers</a>
+        <a href="#install">安装</a>
+      </nav>
+      <a class="btn btn--solid nav__cta" href="#install">开始使用</a>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ── Hero：标语 + 活终端 ────────────────────────────── -->
+    <section class="hero" id="top">
+      <div class="hero__inner">
+        <div class="hero__copy">
+          <p class="eyebrow reveal">Node.js 框架通用 · 零配置</p>
+          <h1 class="hero__title">
+            <span class="line"><span class="word">文件</span></span>
+            <span class="line"><span class="word">即</span></span>
+            <span class="line"><span class="word accent">路由</span></span>
+          </h1>
+          <p class="hero__lead reveal">把控制器目录映射成 HTTP 路由——无需手动注册。支持 Hoa / Koa / Express / Fastify，内置权限元数据与 Cloudflare Workers 支持。</p>
+          <div class="hero__actions reveal">
+            <a class="btn btn--solid" href="#install">npm install @chaeco/auto-router</a>
+            <a class="btn btn--ghost" href="#demo">看用法 ↓</a>
+          </div>
+        </div>
+
+        <div class="terminal reveal" aria-label="Auto Router 演示终端">
+          <div class="terminal__bar">
+            <span class="terminal__dot" aria-hidden="true"></span>
+            <span class="terminal__dot" aria-hidden="true"></span>
+            <span class="terminal__dot" aria-hidden="true"></span>
+            <span class="terminal__title">controllers/ → routes</span>
+          </div>
+          <div class="terminal__body">
+            <pre class="terminal__code" id="terminalCode"><code></code></pre>
+            <div class="terminal__output" id="terminalOutput">
+              <div class="terminal__row"><span class="tok-comment">-- 注册的路由</span></div>
+              <div class="terminal__row tok-sql" id="termSql"></div>
+              <div class="terminal__row"><span class="tok-comment">-- 权限元数据</span></div>
+              <div class="terminal__row tok-param" id="termParams"></div>
+              <div class="terminal__row"><span class="tok-comment">-- 结果</span></div>
+              <div class="terminal__row terminal__result" id="termResult"></div>
+            </div>
+            <div class="terminal__caret" id="terminalCaret" aria-hidden="true">█</div>
+          </div>
+        </div>
+      </div>
+      <div class="hero__scroll-hint" aria-hidden="true">
+        <span>向下滚动</span>
+        <span class="hero__scroll-line"></span>
+      </div>
+    </section>
+
+    <script type="application/json" id="terminalSteps">
+    [
+      {
+        "code": "controllers/\n  get-users.ts        → GET /api/users\n  get-[id].ts         → GET /api/:id\n  post-login.ts       → POST /api/login\n  users/[userId]/get.ts → GET /api/users/:userId",
+        "sql":    "GET /api/users · GET /api/:id · POST /api/login",
+        "params": "requiresAuth: false (blacklist 模式)",
+        "result": "7 routes registered · 0 duplicates"
+      },
+      {
+        "code": "export default createHandler(\n  async (ctx) => { ... },\n  { requiresAuth: true, description: 'Get current user' },\n)",
+        "sql":    "GET /api/users/info",
+        "params": "requiresAuth: true",
+        "result": "→ forcePublic / forceProtected 可批量覆盖"
+      },
+      {
+        "code": "autoRouter({\n  dir: './controllers',\n  ignore: ['^__'],        // 忽略 __ 开头的文件/目录\n  prefix: ['/api', '/v2'], // 同一控制器多前缀\n})",
+        "sql":    "GET /api/users · GET /v2/users",
+        "params": "ignore: ['^__']",
+        "result": "注册 2 次 · 跳过 __ 前缀条目"
+      }
+    ]
+    </script>
+
+    <!-- ── 事实带：真实数字 ───────────────────────────────── -->
+    <section class="facts" aria-label="Auto Router 关键事实">
+      <div class="facts__inner">
+        <div class="fact">
+          <span class="fact__value" data-count="0">0</span>
+          <span class="fact__label">手动路由注册</span>
+        </div>
+        <div class="fact">
+          <span class="fact__value">6+</span>
+          <span class="fact__label">框架支持（Hoa/Koa/Express/…）</span>
+        </div>
+        <div class="fact">
+          <span class="fact__value fact__value--mono">[param]</span>
+          <span class="fact__label">文件命名动态参数语法</span>
+        </div>
+        <div class="fact">
+          <span class="fact__value">100%</span>
+          <span class="fact__label">TypeScript 类型安全</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 为什么：三个主张 ───────────────────────────────── -->
+    <section class="why section" id="why">
+      <div class="section__head">
+        <p class="eyebrow">为什么是 Auto Router</p>
+        <h2 class="section__title">目录结构，就是你的 API 设计。</h2>
+        <p class="section__sub">零配置自动路由、嵌套目录、动态参数与内置权限元数据——把文件系统直接映射成 HTTP 路由。</p>
+      </div>
+      <div class="why__grid">
+        <article class="card reveal">
+          <div class="card__icon" aria-hidden="true">→</div>
+          <h3 class="card__title">文件命名即路由</h3>
+          <p class="card__body"><code>get-users.ts</code> → <code>GET /api/users</code>，<code>get-[id].ts</code> → <code>GET /api/:id</code>。无需手动注册。</p>
+          <pre class="card__code"><code><span class="tok-comment">// 控制器目录</span>
+controllers/
+  get-users.ts        → GET /api/users
+  post-login.ts       → POST /api/login
+  users/[userId]/get.ts → GET /api/users/:userId</code></pre>
+        </article>
+        <article class="card reveal">
+          <div class="card__icon" aria-hidden="true">?</div>
+          <h3 class="card__title">权限元数据内建</h3>
+          <p class="card__body"><code>createHandler</code> 携带 <code>requiresAuth</code> 元数据，<code>forcePublic</code> / <code>forceProtected</code> 批量覆盖。</p>
+          <pre class="card__code"><code><span class="tok-comment">// 权限声明</span>
+createHandler(handler, { requiresAuth: <span class="tok-num">true</span> })
+autoRouter({ defaultRequiresAuth: <span class="tok-num">false</span> })</code></pre>
+        </article>
+        <article class="card reveal">
+          <div class="card__icon" aria-hidden="true">!</div>
+          <h3 class="card__title">多前缀 · 多配置 · ignore</h3>
+          <p class="card__body">同一控制器注册到多个前缀（版本化/本地化），合并多目录配置，按正则忽略文件或文件夹。</p>
+          <pre class="card__code"><code>autoRouter({
+  dir: <span class="tok-str">'./controllers'</span>,
+  prefix: [<span class="tok-str">'/api'</span>, <span class="tok-str">'/v2'</span>],
+  ignore: [<span class="tok-str">'^__'</span>],
+})</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── 命名规则 ───────────────────────────────────────── -->
+    <section class="honest section" id="naming">
+      <div class="section__head">
+        <p class="eyebrow">命名规则</p>
+        <h2 class="section__title">一段文件名，三种写法。</h2>
+        <p class="section__sub">基本格式、单参数、多参数与动态目录——所有规则都可预测、可校验。</p>
+      </div>
+      <div class="table-wrap reveal">
+        <table>
+          <thead>
+            <tr><th>文件</th><th>注册为</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>get.ts</code></td><td><code>GET /api</code></td><td>以目录路径为路由</td></tr>
+            <tr><td><code>get-users.ts</code></td><td><code>GET /api/users</code></td><td>文件名附加路径</td></tr>
+            <tr><td><code>get-[id].ts</code></td><td><code>GET /api/:id</code></td><td>单参数</td></tr>
+            <tr><td><code>get-[userId]-posts.ts</code></td><td><code>GET /api/:userId/posts</code></td><td>多参数，<code>-</code> 变 <code>/</code></td></tr>
+            <tr><td><code>users/[userId]/get.ts</code></td><td><code>GET /api/users/:userId</code></td><td>动态目录（深层推荐）</td></tr>
+            <tr><td><code>users/get-[id].ts</code></td><td><code>GET /api/users/:id</code></td><td>目录参数 + 文件参数组合</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── 用法演示：交互 Tab ─────────────────────────────── -->
+    <section class="demo section" id="demo">
+      <div class="section__head">
+        <p class="eyebrow">用法</p>
+        <h2 class="section__title">三种导出方式，一套心智模型。</h2>
+        <p class="section__sub">纯函数、createHandler 包装器、以及带路由级中间件的进阶写法。</p>
+      </div>
+
+      <div class="demo__tabs" role="tablist" aria-label="用法示例">
+        <button class="demo__tab is-active" role="tab" aria-selected="true" aria-controls="tab-pure" data-tab="pure">纯函数</button>
+        <button class="demo__tab" role="tab" aria-selected="false" aria-controls="tab-handler" data-tab="handler">createHandler</button>
+        <button class="demo__tab" role="tab" aria-selected="false" aria-controls="tab-mw" data-tab="mw">路由级中间件</button>
+      </div>
+
+      <div class="demo__panel is-active" id="tab-pure" role="tabpanel" data-panel="pure">
+        <pre class="demo__code"><code><span class="tok-var">import</span> { autoRouter } <span class="tok-var">from</span> <span class="tok-str">'@chaeco/auto-router'</span>;
+
+<span class="tok-var">const</span> app = <span class="tok-var">new</span> YourFramework();
+
+app.extend(autoRouter({
+  dir: <span class="tok-str">'./controllers'</span>,
+  prefix: <span class="tok-str">'/api'</span>,
+}));
+
+app.listen(<span class="tok-num">3000</span>);
+
+<span class="tok-comment">// controllers/get-users.ts</span>
+<span class="tok-var">export default</span> <span class="tok-var">async</span> (ctx) =&gt; {
+  ctx.res.body = { users: [] };
+};</code></pre>
+      </div>
+
+      <div class="demo__panel" id="tab-handler" role="tabpanel" data-panel="handler">
+        <pre class="demo__code"><code><span class="tok-var">import</span> { createHandler } <span class="tok-var">from</span> <span class="tok-str">'@chaeco/auto-router'</span>;
+
+<span class="tok-comment">// 受保护路由</span>
+<span class="tok-var">export default</span> createHandler(
+  <span class="tok-var">async</span> (ctx) =&gt; {
+    ctx.res.body = { userId: ctx.currentUser?.id };
+  },
+  { requiresAuth: <span class="tok-kw">true</span>, description: <span class="tok-str">'Get current user info'</span> },
+);
+
+<span class="tok-comment">// 覆盖全局 defaultRequiresAuth: true</span>
+<span class="tok-var">export default</span> createHandler(
+  <span class="tok-var">async</span> (ctx) =&gt; { ctx.res.body = { success: <span class="tok-kw">true</span> }; },
+  { requiresAuth: <span class="tok-kw">false</span> },
+);</code></pre>
+      </div>
+
+      <div class="demo__panel" id="tab-mw" role="tabpanel" data-panel="mw">
+        <pre class="demo__code"><code><span class="tok-var">import</span> { z, zodValidator } <span class="tok-var">from</span> <span class="tok-str">'@hoajs/zod'</span>;
+<span class="tok-var">import</span> { createHandler } <span class="tok-var">from</span> <span class="tok-str">'@chaeco/auto-router'</span>;
+
+<span class="tok-var">const</span> LoginSchema = z.object({
+  username: z.string().min(<span class="tok-num">1</span>),
+  password: z.string().min(<span class="tok-num">1</span>),
+});
+
+<span class="tok-var">export default</span> createHandler(
+  <span class="tok-var">async</span> (ctx) =&gt; {
+    <span class="tok-comment">// ctx.req.body 已被 zodValidator 校验并解析</span>
+    ctx.res.body = { success: <span class="tok-kw">true</span> };
+  },
+  { description: <span class="tok-str">'User login'</span> },
+  [zodValidator({ body: LoginSchema })],  <span class="tok-comment">// 路由级中间件</span>
+);</code></pre>
+      </div>
+    </section>
+
+    <!-- ── Workers ────────────────────────────────────────── -->
+    <section class="honest section" id="workers">
+      <div class="section__head">
+        <p class="eyebrow">Cloudflare Workers</p>
+        <h2 class="section__title">边缘运行时，原生支持。</h2>
+        <p class="section__sub">构建期清单 CLI + 零依赖 <code>createWorkerRouter</code>，适配 <code>fetch(request, env, ctx)</code> 签名。</p>
+      </div>
+      <div class="why__grid">
+        <article class="card reveal">
+          <div class="card__icon" aria-hidden="true">⚙</div>
+          <h3 class="card__title">构建期清单</h3>
+          <p class="card__body">CLI 扫描控制器目录，生成静态 TS 清单。</p>
+          <pre class="card__code"><code>npx auto-router-build-manifest ./controllers \
+  ./worker-routes.ts --prefix /api</code></pre>
+        </article>
+        <article class="card reveal">
+          <div class="card__icon" aria-hidden="true">λ</div>
+          <h3 class="card__title">createWorkerRouter</h3>
+          <p class="card__body">零依赖路由，<code>fetch(req, env, ctx)</code> 签名，O(n) 匹配。</p>
+          <pre class="card__code"><code><span class="tok-var">const</span> router = createWorkerRouter&lt;Env&gt;({ routes });
+<span class="tok-var">export default</span> { fetch: router.fetch };</code></pre>
+        </article>
+        <article class="card reveal">
+          <div class="card__icon" aria-hidden="true">!</div>
+          <h3 class="card__title">为什么不用 staticAutoRouter</h3>
+          <p class="card__body">Workers 用 Web Platform <code>fetch</code> 签名，没有中间件栈。<code>createWorkerRouter</code> 与之完全匹配。</p>
+          <pre class="card__code"><code><span class="tok-comment">// 返回对象 → 自动 JSON</span>
+<span class="tok-var">return</span> { users: [<span class="tok-str">'Alice'</span>] };</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── 安装 / CTA ─────────────────────────────────────── -->
+    <section class="cta section" id="install">
+      <div class="cta__box">
+        <p class="eyebrow">开始使用</p>
+        <h2 class="cta__title">目录结构，即刻成路由。</h2>
+        <pre class="cta__cmd"><code>$ npm install @chaeco/auto-router</code><span class="cta__cursor" aria-hidden="true"></span></pre>
+        <p class="cta__note">Node.js ≥ 16 · TypeScript 全支持 · MIT</p>
+        <div class="cta__actions">
+          <a class="btn btn--solid" href="https://github.com/chaeco/auto-router" target="_blank" rel="noopener">GitHub →</a>
+          <a class="btn btn--ghost" href="https://github.com/chaeco/auto-router#readme" target="_blank" rel="noopener">阅读文档</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <span class="brand"><span class="brand__mark" aria-hidden="true">→</span> auto-router</span>
+      <p>文件即路由 · 类型安全 · 权限内建</p>
+      <p class="footer__meta">MIT License · @chaeco/auto-router</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

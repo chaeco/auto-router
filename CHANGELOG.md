@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.1] - 2026-08-14
+
+### Fixed
+
+- **Force-pattern conflict reporting aligned across load paths** — file-based `autoRouter` now reports a `forcePublic`/`forceProtected` conflict only when the route has no explicit `createHandler` meta (matching `staticAutoRouter`). Explicit meta now logs only the override, not a spurious "both matched" conflict.
+- **Worker-manifest import paths** — `auto-router-build-manifest` no longer emits `./../…` import targets when the output file lives outside the controllers directory; the `./` prefix is added only when the relative path is not already dot-relative.
+
+### Added
+
+- **Project website** — `website/` landing page (unified Chaeco dark-terminal style) with live terminal demo, file-naming reference, auth/Workers sections, and install CTA.
+- **GitHub Pages workflow** — `.github/workflows/pages.yml` deploys `website/` to GitHub Pages (replaces the previous `deploy-pages.yml` which targeted `docs/`).
 
 ## [0.2.0] - 2026-08-13
 

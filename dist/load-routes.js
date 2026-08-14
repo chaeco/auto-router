@@ -192,16 +192,18 @@ export async function loadRoutes(app, options) {
                             prefix,
                         });
                         tracker.addMatch(authResult.matchedPublicPattern, authResult.matchedProtectedPattern);
-                        if (authResult.matchedPublicPattern && authResult.matchedProtectedPattern) {
-                            tracker.addConflict(routePath, authResult.matchedPublicPattern, authResult.matchedProtectedPattern);
-                        }
                         if (routeMeta?.requiresAuth !== undefined) {
+                            // Explicit createHandler meta wins over any force pattern — report the
+                            // override, not a "both matched" conflict (matches staticAutoRouter).
                             if (authResult.matchedProtectedPattern) {
                                 tracker.addOverride(routePath, authResult.matchedProtectedPattern, 'forceProtected');
                             }
                             else if (authResult.matchedPublicPattern) {
                                 tracker.addOverride(routePath, authResult.matchedPublicPattern, 'forcePublic');
                             }
+                        }
+                        else if (authResult.matchedPublicPattern && authResult.matchedProtectedPattern) {
+                            tracker.addConflict(routePath, authResult.matchedPublicPattern, authResult.matchedProtectedPattern);
                         }
                         const requiresAuth = authResult.requiresAuth;
                         const authMark = requiresAuth ? ' 🔒' : '';

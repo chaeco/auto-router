@@ -116,7 +116,10 @@ export function generateManifest(options) {
     for (const route of uniqueRoutes) {
         const absoluteController = resolve(controllersDir, route.importPath);
         const relativeImport = relative(outputDir, absoluteController).replace(/\\/g, '/');
-        const importLine = `import ${route.importId} from './${relativeImport}'`;
+        // Prefix with './' only when the path is not already relative (../…). This
+        // keeps imports valid when the manifest lives in a sibling/parent directory.
+        const importTarget = relativeImport.startsWith('.') ? relativeImport : `./${relativeImport}`;
+        const importLine = `import ${route.importId} from '${importTarget}'`;
         imports.push(importLine);
     }
     const routeEntries = uniqueRoutes

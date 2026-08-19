@@ -1,4 +1,4 @@
-import { parseRouteName, parseDirectorySegment, validateRouteName, validateDirectorySegment, normalizeParamNames } from '../parse-route.js'
+import { parseRouteName, parseDirectorySegment, validateRouteName, validateDirectorySegment, normalizeParamNames } from '../parse-route'
 
 describe('parseRouteName', () => {
   it('converts [param] to :param (case preserved)', () => {

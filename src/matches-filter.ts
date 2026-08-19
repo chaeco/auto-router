@@ -9,7 +9,7 @@
  * - Exact match (with or without prefix): '/users' matches '/api/users'
  * - Wildcard suffix: '/api/admin/*' matches '/api/admin/foo' and '/api/admin/foo/bar' but NOT '/api/admin' itself
  */
-import { HTTP_METHODS } from './constants.js'
+import { HTTP_METHODS } from './constants'
 
 export const HTTP_METHODS_UPPER = HTTP_METHODS.map(m => m.toUpperCase()) as readonly string[]
 

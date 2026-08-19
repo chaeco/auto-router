@@ -1,7 +1,7 @@
 /**
  * Shared auth resolution and force-pattern tracking for auto-router.
  */
-import { matchesFilter } from './matches-filter.js'
+import { matchesFilter } from './matches-filter'
 
 export type LogFn = (level: 'info' | 'warn' | 'error', message: string) => void
 

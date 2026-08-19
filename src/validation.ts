@@ -1,8 +1,8 @@
 /**
  * Shared file-name and directory-name validation for auto-router.
  */
-import { HTTP_METHODS } from './constants.js'
-import { validateRouteName } from './parse-route.js'
+import { HTTP_METHODS } from './constants'
+import { validateRouteName } from './parse-route'
 
 export interface FileNameValidation {
   valid: boolean

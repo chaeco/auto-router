@@ -1,5 +1,5 @@
-import { generateManifest } from '../build-worker-manifest.js'
-import { createWorkerRouter, type WorkerManifestRoute, type WorkerRouteContext } from '../worker-manifest.js'
+import { generateManifest } from '../build-worker-manifest'
+import { createWorkerRouter, type WorkerManifestRoute, type WorkerRouteContext } from '../worker-manifest'
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'

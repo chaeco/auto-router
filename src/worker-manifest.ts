@@ -1,4 +1,4 @@
-import { isRouteConfig, type RouteMiddleware } from './handler.js'
+import { isRouteConfig, type RouteMiddleware } from './handler'
 
 // ExecutionContext type for Cloudflare Workers — users should install @cloudflare/workers-types
 // If not available, falls back to unknown

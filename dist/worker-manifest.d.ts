@@ -1,6 +1,14 @@
-import { type RouteMiddleware } from './handler.js';
+/**
+ * Route-level middleware type
+ *
+ * Follows the Koa-style `(ctx, next)` signature that Hoa uses for middleware,
+ * so framework middleware like `@hoajs/zod`'s `zodValidator()` can be attached
+ * to a single route via `createHandler`'s third argument.
+ */
+type RouteMiddleware<TCtx = any> = (ctx: TCtx, next: () => Promise<any> | any) => Promise<any> | any;
+
 type ExecutionContext = unknown;
-export interface WorkerRouteContext<TEnv = unknown, TCtx = ExecutionContext> {
+interface WorkerRouteContext<TEnv = unknown, TCtx = ExecutionContext> {
     req: Request;
     env: TEnv;
     ctx: TCtx;
@@ -11,7 +19,7 @@ export interface WorkerRouteContext<TEnv = unknown, TCtx = ExecutionContext> {
         body: string | ArrayBuffer | ReadableStream | null;
     };
 }
-export interface WorkerManifestRoute<TEnv = unknown, TCtx = ExecutionContext> {
+interface WorkerManifestRoute<TEnv = unknown, TCtx = ExecutionContext> {
     /** Express-style path pattern, e.g. '/api/users/:id' */
     pattern: string;
     /** HTTP method, e.g. 'GET', 'POST' */
@@ -21,13 +29,14 @@ export interface WorkerManifestRoute<TEnv = unknown, TCtx = ExecutionContext> {
     /** Route-level middleware chain, run before the handler */
     middlewares?: RouteMiddleware<WorkerRouteContext<TEnv, TCtx>>[];
 }
-export interface WorkerRouterOptions<TEnv = unknown, TCtx = ExecutionContext> {
+interface WorkerRouterOptions<TEnv = unknown, TCtx = ExecutionContext> {
     routes: WorkerManifestRoute<TEnv, TCtx>[];
     notFound?: (req: Request, env: TEnv, ctx: TCtx) => Response | Promise<Response>;
     onError?: (err: unknown, req: Request, env: TEnv, ctx: TCtx) => Response | Promise<Response>;
 }
-export declare function createWorkerRouter<TEnv = unknown, TCtx = ExecutionContext>(options: WorkerRouterOptions<TEnv, TCtx>): {
+declare function createWorkerRouter<TEnv = unknown, TCtx = ExecutionContext>(options: WorkerRouterOptions<TEnv, TCtx>): {
     fetch: (req: Request, env: TEnv, ctx: TCtx) => Promise<Response>;
 };
-export {};
-//# sourceMappingURL=worker-manifest.d.ts.map
+
+export { createWorkerRouter };
+export type { WorkerManifestRoute, WorkerRouteContext, WorkerRouterOptions };

@@ -11,7 +11,7 @@ export default {
     ],
   },
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^(\.\.?/.*)\.js$': '$1',
   },
   testEnvironment: 'node',
   testMatch: ['<rootDir>/src/**/*.test.ts', '<rootDir>/src/**/*.spec.ts'],

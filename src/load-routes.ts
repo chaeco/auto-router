@@ -1,12 +1,12 @@
 import { readdirSync, statSync } from 'fs'
 import { join, resolve } from 'path'
 import { pathToFileURL } from 'url'
-import { isRouteConfig, type AppLike, type RouteMeta, type RouteInfo, type RouteMiddleware } from './handler.js'
-import { HTTP_METHODS } from './constants.js'
-import { validateFileName, isHttpMethodKeyword } from './validation.js'
-import { resolveAuth, ForcePatternTracker } from './auth-resolver.js'
-import { validateDirectorySegment, parseRouteName, parseDirectorySegment, normalizeParamNames } from './parse-route.js'
-import { isIgnored, type CompiledIgnorePattern } from './ignore.js'
+import { isRouteConfig, type AppLike, type RouteMeta, type RouteInfo, type RouteMiddleware } from './handler'
+import { HTTP_METHODS } from './constants'
+import { validateFileName, isHttpMethodKeyword } from './validation'
+import { resolveAuth, ForcePatternTracker } from './auth-resolver'
+import { validateDirectorySegment, parseRouteName, parseDirectorySegment, normalizeParamNames } from './parse-route'
+import { isIgnored, type CompiledIgnorePattern } from './ignore'
 
 /** Internal options passed from autoRouter() after normalization. */
 export interface LoadRoutesOptions {

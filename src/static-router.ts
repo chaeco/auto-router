@@ -1,6 +1,6 @@
-import { isRouteConfig, type AppLike, type RouteInfo, type RouteMiddleware } from './handler.js'
-import { resolveAuth, ForcePatternTracker, type LogFn } from './auth-resolver.js'
-import { validateRouteName, normalizeParamNames } from './parse-route.js'
+import { isRouteConfig, type AppLike, type RouteInfo, type RouteMiddleware } from './handler'
+import { resolveAuth, ForcePatternTracker, type LogFn } from './auth-resolver'
+import { validateRouteName, normalizeParamNames } from './parse-route'
 
 /** Static route entry — callers statically import handlers and declare method/path. */
 export interface StaticRoute {

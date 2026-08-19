@@ -1,5 +1,5 @@
-import { createWorkerRouter, type WorkerManifestRoute, type WorkerRouteContext } from '../worker-manifest.js'
-import { createHandler } from '../handler.js'
+import { createWorkerRouter, type WorkerManifestRoute, type WorkerRouteContext } from '../worker-manifest'
+import { createHandler } from '../handler'
 
 describe('createWorkerRouter', () => {
   it('returns an object with a fetch function', () => {

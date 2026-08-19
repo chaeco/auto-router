@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals'
-import { autoRouter } from '../auto-router.js'
+import { autoRouter } from '../auto-router'
 import { mkdirSync, writeFileSync, rmSync, chmodSync, symlinkSync, existsSync } from 'fs'
 import { join } from 'path'
 

@@ -1,4 +1,25 @@
-import { isRouteConfig } from './handler.js';
+/**
+ * Create a route configuration with optional metadata and middleware.
+ *
+ * Supports three usage patterns:
+ * 1. Pure function (recommended for most routes):
+ *    export default async (ctx) => { ctx.body = { success: true } }
+ *
+ * 2. createHandler wrapper (for routes that need metadata):
+ *    export default createHandler(async (ctx) => { ... }, { requiresAuth: true })
+ *
+ * 3. createHandler with route-level middlewares (e.g. @hoajs/zod):
+ *    export default createHandler(async (ctx) => { ... }, { requiresAuth: true }, [zodValidator(...)])
+ */
+/** Check if a value is a RouteConfig object created by createHandler(). */
+function isRouteConfig(obj) {
+    return !!(obj &&
+        typeof obj === 'object' &&
+        'handler' in obj &&
+        typeof obj.handler === 'function' &&
+        obj.__routeConfigBrand === true);
+}
+
 function matchRoute(pattern, pathname) {
     const patternSegments = pattern.split('/').filter(Boolean);
     const pathSegments = pathname.split('/').filter(Boolean);
@@ -24,7 +45,7 @@ function matchRoute(pattern, pathname) {
     }
     return { params };
 }
-export function createWorkerRouter(options) {
+function createWorkerRouter(options) {
     const { routes, notFound, onError } = options;
     // Unwrap createHandler results once at construction time
     const resolved = routes.map(route => {
@@ -114,4 +135,6 @@ export function createWorkerRouter(options) {
         },
     };
 }
+
+export { createWorkerRouter };
 //# sourceMappingURL=worker-manifest.js.map

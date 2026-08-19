@@ -1,6 +1,6 @@
-import { loadRoutes } from './load-routes.js'
-import type { AppLike } from './handler.js'
-import { compileIgnorePatterns, type CompiledIgnorePattern, type IgnorePattern } from './ignore.js'
+import { loadRoutes } from './load-routes'
+import type { AppLike } from './handler'
+import { compileIgnorePatterns, type CompiledIgnorePattern, type IgnorePattern } from './ignore'
 
 /** Single auto-router configuration options. */
 export interface AutoRouterOptions {

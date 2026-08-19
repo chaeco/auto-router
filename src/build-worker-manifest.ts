@@ -2,10 +2,10 @@
 
 import { readdirSync, statSync, mkdirSync, writeFileSync } from 'fs'
 import { join, resolve, relative, dirname } from 'path'
-import { HTTP_METHODS } from './constants.js'
-import { validateFileName } from './validation.js'
-import { parseRouteName, parseDirectorySegment, normalizeParamNames } from './parse-route.js'
-import { compileIgnorePatterns, isIgnored, type CompiledIgnorePattern, type IgnorePattern } from './ignore.js'
+import { HTTP_METHODS } from './constants'
+import { validateFileName } from './validation'
+import { parseRouteName, parseDirectorySegment, normalizeParamNames } from './parse-route'
+import { compileIgnorePatterns, isIgnored, type CompiledIgnorePattern, type IgnorePattern } from './ignore'
 
 interface RouteEntry {
   method: string

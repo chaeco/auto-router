@@ -1,4 +1,4 @@
-import { generateManifest } from '../build-worker-manifest.js'
+import { generateManifest } from '../build-worker-manifest'
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync, chmodSync, symlinkSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'

@@ -7,3 +7,6 @@ example/dist/
 .env
 .env.local
 coverage/
+# Local AI assistant files (not published)
+AGENTS.md
+.agents/
